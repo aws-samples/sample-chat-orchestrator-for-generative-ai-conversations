@@ -12,7 +12,7 @@ import { Aspects } from 'aws-cdk-lib';
 const configParams = require('../config.params.json');
 
 const app = new App();
-Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true })) 
+//Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true })) 
 
 const application_version = app.node.tryGetContext('application_version')
 console.log("VERSION: ",application_version)

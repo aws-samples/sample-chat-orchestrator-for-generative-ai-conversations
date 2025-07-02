@@ -1,7 +1,7 @@
 {
-	"CdkAppName": "MultiChannelGenAIDemo",
-	"CdkBackendStack": "MultiChannelGenAIDemo",
-	"hierarchy": "/MultiChannelGenAIDemo/",
+	"CdkAppName": "MultiChannelGenAI2",
+	"CdkBackendStack": "MultiChannelGenAI2",
+	"hierarchy": "/MultiChannelGenAI2/",
 	"parameters": [
 		{
 			"name": "smsEnabled",
@@ -12,16 +12,25 @@
 			"boolean": true
 		},
 		{
-			"name": "originationNumberId",
-			"cliFormat": "origination-number-id",
+			"name": "smsOriginationNumberId",
+			"cliFormat": "sms-origination-number-id",
 			"description": "The ID of the Origination Phone number you want to use.  Can be found in the End User Messaging SMS console.",
-			"required": true
+			"required": true,
+			"parent": "smsEnabled"
 		},
 		{
-			"name": "configurationSet",
-			"cliFormat": "configuration-set",
+			"name": "smsSNSTopicArn",
+			"cliFormat": "sms-sns-topic-arn",
+			"description": "The ARN of the SNS Topic to be used when configuring your SMS Origination Number for 2-way SMS. If not provided, a new SNS Topic will be created and assigned to the SMS Origination Number.",
+			"required": false,
+			"parent": "smsEnabled"
+		},
+		{
+			"name": "smsConfigurationSet",
+			"cliFormat": "sms-configuration-set",
 			"description": "The configuration set to use for the SMS messages.",
-			"required": false
+			"required": false,
+			"parent": "smsEnabled"
 		},
 		{
 			"name": "whatsappEnabled",
@@ -32,23 +41,53 @@
 			"boolean": true
 		},
 		{
-			"name": "eumWhatsappOriginationNumberId",
+			"name": "whatsAppBusinessAccountId",
+			"cliFormat": "whatsapp-business-account-id",
+			"description": "The ID of the WhatsApp Business Account you want to use.  Can be found in the End User Messaging Social Messaging console.",
+			"required": true,
+			"parent": "whatsappEnabled"
+		},
+		{
+			"name": "whatsappOriginationNumberId",
 			"cliFormat": "whatsapp-origination-number-id",
 			"description": "The ID of the WhatsAppOrigination Phone number you want to use.  Can be found in the End User Messaging WhatsApp console.",
 			"required": true,
 			"parent": "whatsappEnabled"
 		},
 		{
-			"name": "eumWhatsappSNSTopicArn",
+			"name": "whatsappSNSTopicArn",
 			"cliFormat": "whatsapp-sns-topic-arn",
-			"description": "The ARN of the SNS Topic that was used when configuring your WhatsApp Business Account.",
-			"required": true,
+			"description": "The ARN of the SNS Topic to be used when configuring your WhatsApp Business Account. If not provided, a new SNS Topic will be created and assigned to the WhatsApp Business Account.",
+			"required": false,
 			"parent": "whatsappEnabled"
+		},
+		{
+			"name": "emailEnabled",
+			"cliFormat": "email-enabled",
+			"description": "Set to true to enable Email support",
+			"defaultValue": false,
+			"required": true,
+			"boolean": true
+		},
+		{
+			"name": "useBedrockKnowledgeBase",
+			"cliFormat": "use-bedrock-knowledge-base",
+			"description": "Set to true to use Bedrock Knowledge Base for the chatbot.",
+			"defaultValue": false,
+			"required": true,
+			"boolean": true
+		},
+		{
+			"name": "bedrockKnowledgeBaseId",
+			"cliFormat": "bedrock-knowledge-base-id",
+			"description": "The ID of the Bedrock Knowledge Base you want to use.  Can be found in the Bedrock console.",
+			"required": true,
+			"parent": "useBedrockKnowledgeBase"
 		},
 		{
 			"name": "useBedrockAgent",
 			"cliFormat": "use-bedrock-agent",
-			"description": "Set to true to use Bedrock Agents for the chatbot. If false, the chatbot will be deployed using the default knowledge base.",
+			"description": "Set to true to use Bedrock Agents for the chatbot.",
 			"defaultValue": false,
 			"required": true,
 			"boolean": true
@@ -68,13 +107,21 @@
 			"parent": "useBedrockAgent"
 		},
 		{
-			"name": "cloudsearchReplicasEnabled",
-			"cliFormat": "cloudsearch-replicas-enabled",
-			"description": "In order to save costs, you can disable replicas on the CloudSearch collection. We recommend leaving this set to false for development and testing and setting it to true for production environments.",
+			"name": "deployAPIStack",
+			"cliFormat": "deploy-api-stack",
+			"description": "Set to true to deploy the API Stack.",
 			"defaultValue": false,
 			"required": true,
 			"boolean": true
 		},
+		{
+            "name": "apiAllowedOrigins",
+            "cliFormat": "api-allowed-origins",
+            "description": "Please provide the domain of your web application, to allow CORS. For example: https://aaaabbbbcccc.cloudfront.net",
+            "defaultValue": "*",
+            "required": true,
+			"parent": "deployAPIStack"
+        },
 		{
 			"name": "conversationFirehoseStream",
 			"cliFormat": "conversation-firehose-stream",

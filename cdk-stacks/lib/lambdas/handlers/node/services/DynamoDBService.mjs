@@ -4,7 +4,11 @@
 const { DynamoDBClient, QueryCommand, BatchWriteItemCommand } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocument, paginateScan, DynamoDBDocumentClient } = require("@aws-sdk/lib-dynamodb");
 const dynamoDBClient = new DynamoDBClient({ region: process.env.AWS_REGION });
-const ddbDocClient = DynamoDBDocument.from(dynamoDBClient);
+const ddbDocClient = DynamoDBDocument.from(dynamoDBClient,{
+  marshallOptions: {
+    removeUndefinedValues: true
+  }
+});
 
 export async function scan (tableName) {
   const config = {
@@ -142,8 +146,6 @@ export async function deleteItemsByPartitionKey(tableName, partitionKeyName, par
       allItems.push(...Items);
       lastEvaluatedKey = LastEvaluatedKey;
     } while (lastEvaluatedKey);
-
-    console.log(1)
 
     // Delete the retrieved items in batches
     const deletePromises = [];
