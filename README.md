@@ -85,12 +85,12 @@ These instructions assume you have completed all the prerequisites.
     - AWS SDK (used in the configure script in step 4) can use either the environment variables or credentials file/profile config, however note that the region environment variable in this case is AWS_REGION rather than AWS_DEFAULT_REGION (as used in awscli)
 
 3. Install NPM packages
-    - Open your Terminal and navigate to `two-way-sms-chat-with-a-generative-ai-chatbot/cdk-stacks`
+    - Open your Terminal and navigate to `sample-chat-orchestrator-for-generative-ai-conversations/cdk-stacks`
     - Run `npm run install:all`
     - This script goes through all packages of the solution and installs necessary modules (webapp, cdk-stacks, lambdas, lambda-layers)
 
 4. Configure CDK stacks
-    - In your terminal,  navigate to `two-way-sms-chat-with-a-generative-ai-chatbot/cdk-stacks`
+    - In your terminal,  navigate to `sample-chat-orchestrator-for-generative-ai-conversations/cdk-stacks`
     - Start the configuration script in interactive mode   
       `node configure.js -i`
     - (You can configure it via single command, by directly providing parameters, as described in the script help instructions which you can see by running 
