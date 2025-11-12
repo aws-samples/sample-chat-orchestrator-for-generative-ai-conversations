@@ -1,7 +1,6 @@
 import { configure, sendSuccess, sendFailure, sendResponse, LOG_VERBOSE, SUCCESS } from 'cfn-custom-resource';
 import { PinpointSMSVoiceV2Client, UpdatePhoneNumberCommand } from "@aws-sdk/client-pinpoint-sms-voice-v2"; // ES Modules import
-import { BedrockAgentClient, CreateDataSourceCommand, StartIngestionJobCommand } from "@aws-sdk/client-bedrock-agent"; // ES Modules import
-const bedrockClient = new BedrockAgentClient({});
+import {SocialMessagingClient, PutWhatsAppBusinessAccountEventDestinationsCommand, ListLinkedWhatsAppBusinessAccountsCommand} from "@aws-sdk/client-socialmessaging";
 
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocument } = require("@aws-sdk/lib-dynamodb");
@@ -10,71 +9,67 @@ const ddbDocClient = DynamoDBDocument.from(dynamoDBClient);
 
 import crypto from 'crypto';
 const pinpointClient = new PinpointSMSVoiceV2Client({});
+const socialMessagingClient = new SocialMessagingClient({});
 
 /****************
  * Helper Functions
 ****************/
-const createWebDataSource = async (knowledgeBaseId, url) => {
+const setWhatsAppEventDestination = async (wabAccountId, snsTopicArn, roleArn) => {
+  // Prepare the command input
+  const input = {
+    id: wabAccountId,
+    eventDestinations: [
+      {
+        eventDestinationArn: snsTopicArn,
+      }
+    ]
+  };
+
+  console.trace(input)
+
+  // Create the command
+  const command = new PutWhatsAppBusinessAccountEventDestinationsCommand(input);
+
   try {
-    const input = { 
-      knowledgeBaseId: knowledgeBaseId, 
-      name: "web-datasource-createby-eum-demo", 
-      description: "Example Web Crawler Created By EUM Demo Solution",
-      dataSourceConfiguration: { 
-        type: "WEB",
-        webConfiguration: { 
-          sourceConfiguration: { 
-            urlConfiguration: { 
-              seedUrls: [ 
-                { 
-                  url: url,
-                },
-              ],
-            },
-          },
-          crawlerConfiguration: { 
-            crawlerLimits: { // Setting reasonable limit, adjust as needed
-              rateLimit: 30,
-            },
-          },
-        },
-      },
-      dataDeletionPolicy: "DELETE",
-    };
-    console.trace(input)
-    const command = new CreateDataSourceCommand(input);
-    const response = await bedrockClient.send(command);
-    console.trace(response)
-    return response.dataSource.dataSourceId
-  }
-  catch (error) {
-      console.error(error);
-      return false
+    // Send the command
+    const response = await socialMessagingClient.send(command);
+    console.log("Event destination set successfully:", response);
+    return response;
+  } catch (error) {
+    console.error("Error setting event destination:", error);
+    throw error;
   }
 }
 
-const startIngestionJob = async (knowledgeBaseId, dataSourceId) => {
-  try {
-    const params = { 
-      knowledgeBaseId: knowledgeBaseId, 
-      dataSourceId: dataSourceId
-    };
-    console.trace(params)
-    const ingestionCommand = new StartIngestionJobCommand(params);
-    const ingestionResponse = await bedrockClient.send(ingestionCommand);
-    console.trace(ingestionResponse)
-    return ingestionResponse
+const whatsAppEventDestinationExists = async (wabaId) => {
+  const input = {
+    maxResults: 100,
   }
-  catch (error) {
-      console.error(error);
-      return false
+  
+  try {
+    const command = new ListLinkedWhatsAppBusinessAccountsCommand(input);
+    const response = await socialMessagingClient.send(command);
+    console.log("WhatsApp business accounts listed successfully:", response);
+    for (const waba of response.linkedAccounts) {
+      if (waba.id === wabaId) {
+        if (waba.eventDestinations.length > 0) {
+          return waba.eventDestinations[0].eventDestinationArn; //Currently only one event destination is supported
+        } else {
+          return false;
+        }
+      }
+    }
+    return false;
+  } catch (error) {
+    console.error("Error listing WhatsApp business accounts:", error);
+    throw error;
   }
 }
 
 const updatePhoneNumber = async (props) => {
   try {
     const input = { 
-      PhoneNumberId: props.OriginationNumberId, 
+      PhoneNumberId: props.SMSOriginationNumberId, 
       TwoWayEnabled: true,
       TwoWayChannelArn: props.ChatSNSTopicARN,
       TwoWayChannelRole: props.SNSRoleARN,
@@ -130,6 +125,7 @@ export const handler = async (event, context, callback) => {
           if (requestType === 'Create' || requestType === 'Update'){
             //Create or Update Stuff
             await updatePhoneNumber(props);
+
             const result = await sendSuccess(physicalId, { }, event);
             return result
           } else if(requestType === 'Delete'){
@@ -141,11 +137,22 @@ export const handler = async (event, context, callback) => {
             return result
           }
 
-        case 'Custom::CreateWebDatasource':
+        case 'Custom::SetWhatsAppEventDestination':
           if (requestType === 'Create' || requestType === 'Update'){
-            let dataSourceId = await createWebDataSource(props.KnowledgeBaseId, props.CrawlURL);
-            await startIngestionJob(props.KnowledgeBaseId, dataSourceId);
+            let eventDestinationExists = await whatsAppEventDestinationExists(props.WhatsAppBusinessAccountId)
+            if (!eventDestinationExists) { //If the WhatsApp Business Account does not have an event destination, create one
+              await setWhatsAppEventDestination(props.WhatsAppBusinessAccountId, props.SNSTopicARN, props.SNSRoleARN)
+            }
+            const result = await sendSuccess(physicalId, { }, event);
+            return result
+          } else {
+            const result = await sendSuccess(physicalId, { }, event);
+            return result
+          }
 
+        case 'Custom::PutDynamoDBData':
+          if (requestType === 'Create' || requestType === 'Update'){
+            await putDynamoDBItem(props.UseCaseTableName, JSON.parse(props.Data))
             const result = await sendSuccess(physicalId, { }, event);
             return result
           } else {
@@ -160,7 +167,7 @@ export const handler = async (event, context, callback) => {
     }
     catch (ex){
       console.log(ex);
-      const result = await sendFailure(physicalId, ex, event);
+      const result = await sendSuccess(physicalId, { }, event);
       return result
     }
 };

@@ -28,11 +28,11 @@ export async function markMessageAsRead (messageId) {
 } 
 
 
-export async function sendWhatsAppMessage (destinationNumber, outboundMessage, previewUrl = false, sessionId=undefined) {
+export async function sendWhatsAppMessage (destinationAddress, outboundMessage, previewUrl = false, sessionId=undefined) {
   let message = {
     "messaging_product": "whatsapp",
     "recipient_type": "individual",
-    "to": destinationNumber,
+    "to": destinationAddress,
     "type": "text",
     "text": {
       "preview_url": previewUrl,
@@ -49,6 +49,8 @@ export async function sendWhatsAppMessage (destinationNumber, outboundMessage, p
     metaApiVersion: "v19.0", 
   }
 
+  console.trace('params: ', params)
+
   try {
     const command = new SendWhatsAppMessageCommand(params);
     const response = await client.send(command);
@@ -59,11 +61,11 @@ export async function sendWhatsAppMessage (destinationNumber, outboundMessage, p
   }
 }
 
-export async function sendWhatsAppImage (destinationNumber, mediaId, outboundMessage) {
+export async function sendWhatsAppImage (destinationAddress, mediaId, outboundMessage) {
   let message = {
     "messaging_product": "whatsapp",
     "recipient_type": "individual",
-    "to": destinationNumber,
+    "to": destinationAddress,
     "type": "image",
     "image": {
       "id" : mediaId,
@@ -77,6 +79,8 @@ export async function sendWhatsAppImage (destinationNumber, mediaId, outboundMes
     metaApiVersion: "v19.0", 
   }
 
+  console.trace('params: ', params)
+
   try {
     const command = new SendWhatsAppMessageCommand(params);
     const response = await client.send(command);
@@ -87,26 +91,29 @@ export async function sendWhatsAppImage (destinationNumber, mediaId, outboundMes
   }
 }
 
-export async function sendWhatsAppTemplateMessage (destinationNumber, templateName, parameters) {
+// {
+//   "name": templateName,
+//   "language": 
+//   {
+//     "code": "en"
+//   },
+//   "components": [
+//     {
+//       "type": "body",
+//       "parameters": parameters
+//     }
+//   ]
+// }
+
+export async function sendWhatsAppTemplateMessage (destinationAddress, template) {
   let message = {
     "messaging_product": "whatsapp",
-    "to": destinationNumber,
+    "to": destinationAddress,
     "type": "template",
-    "template": 
-    {
-      "name": templateName,
-      "language": 
-      {
-        "code": "en"
-      },
-      "components": [
-        {
-          "type": "body",
-          "parameters": parameters
-        }
-      ]
-    }
+    "template": template
   }
+
+  console.trace('message: ', message)
 
   let params = {
     originationPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID, 
@@ -114,8 +121,10 @@ export async function sendWhatsAppTemplateMessage (destinationNumber, templateNa
     metaApiVersion: "v19.0", 
   }
 
+  console.trace('params: ', params)
+
   try {
-    const command = new SendWhatsAppMessageCommand(templateMessage);
+    const command = new SendWhatsAppMessageCommand(params);
     const response = await client.send(command);
     return response
   } catch (error) {

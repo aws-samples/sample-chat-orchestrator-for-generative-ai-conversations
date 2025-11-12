@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-07-02
+
+### Added
+- Optional API Endpoint for sending messages
+- Support for Amazon Nova Models
+- Support for newer Anthropic Models
+- Configurable Use Cases to support multiple business units and sending/receiving scenarios
+
+### Changed
+- Decomposed Chat Handler into multiple Lambda functions
+- Decomposed architecture to support future customer built channels and/or LLM Agents
+- Updated dependencies
+- Updated documentation
+
 ## [1.2.2] - 2025-02-19
 
 ### Changed
