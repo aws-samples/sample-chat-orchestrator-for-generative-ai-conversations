@@ -4,16 +4,10 @@ import { randomUUID } from 'crypto';
 
 // SPDX-License-Identifier: MIT-0
 const DynamoDBService = require('./services/DynamoDBService.mjs');
-const BedrockService = require('./services/BedrockService.mjs');
-const PinpointService = require('./services/PinpointService.mjs');
-const WhatsAppService = require('./services/WhatsAppService.mjs');
 const FirehoseService = require('./services/FirehoseService.mjs');
 const LambdaService = require('./services/LambdaService.mjs');
 const xss = require("xss") //https://github.com/leizongmin/js-xss
 const Cache = require('./services/CacheService.js');
-const Utilities = require('./services/UtilitiesService.mjs');
-
-const restartKeywords = ['restart','begin','commence','initiate','launch','commence','start','demo','go','reset', 'clear']
 // Initialize cache
 const cache = new Cache();
 
@@ -57,24 +51,37 @@ const writeMessageToStorage = async (recipient, direction, channel, messageConte
 }
 
 const sendResponse = async (useCase, recipient, inboundMessage, outboundMessage, imageId = null, sessionId, sessionVariables = {}) => {
-    //find the channel in the usecase that matches the recipient channel
-    let channel = useCase.channels.find(channel => channel.channel === sessionVariables.channel)
-
-    //Call the channel processor lambda
-    let response = null
-    if(imageId){
-        response = await LambdaService.invoke(channel.processorLambdaName, {recipient, channel, outboundMessage, imageId})
+    let channel = []
+    if (sessionVariables.channel && !sessionVariables.channel.toLowerCase().startsWith('api')) {
+        //find the channel in the usecase that matches the recipient channel
+        channel = useCase.channels.find(channel => channel.channel === sessionVariables.channel)
     } else {
-        response = await LambdaService.invoke(channel.processorLambdaName, {recipient, channel, outboundMessage})
+        channel.channel = sessionVariables.channel || 'API'
     }
 
-    console.log('response: ', response)
+    let response = { 'message': 'No channel processor response generated.',
+        'messageId': randomUUID()
+    }
 
-    // Write inbound message to storage
-    await writeMessageToStorage(recipient, 'inbound', channel.channel, inboundMessage, recipient.inboundMessageId, sessionId, sessionVariables);
+    if(!channel.channel.toLowerCase().startsWith('api')){
+        if(imageId){
+            response = await LambdaService.invoke(channel.processorLambdaName, {recipient, channel, outboundMessage, imageId})
+        } else {
+            response = await LambdaService.invoke(channel.processorLambdaName, {recipient, channel, outboundMessage})
+        }
+    }
 
-    // Write outbound message to storage
-    await writeMessageToStorage(recipient, 'outbound', channel.channel, outboundMessage, response.messageId, sessionId, sessionVariables);
+    console.log('Response: ', JSON.stringify(response, null, 2))
+
+    // Return data needed for storage operations in main handler
+    return {
+        channel: channel.channel,
+        response: response,
+        inboundMessage: inboundMessage,
+        outboundMessage: outboundMessage,
+        sessionId: sessionId,
+        sessionVariables: sessionVariables
+    }
 }
 
 const getConversation = async (phoneNumber, channel) => {
@@ -115,14 +122,22 @@ const forwardMessage = async (recipient, message, useCase, imageId = null) => {
     } else {
         response = await LambdaService.invoke(channel.processorLambdaName, {recipient, channel, "outboundMessage": message})
     }
-    console.trace(`Response: `, JSON.stringify(response,null,2));
 
-    // Write outbound message to storage
+    console.trace('Response: ', JSON.stringify(response,null,2));
+
+    // Return data needed for storage operations in main handler
     let sessionId = randomUUID()
-    await writeMessageToStorage(recipient, 'outbound', channel.channel, message, response.messageId, sessionId, {useCaseId: useCase.useCase, channel: recipient.channel, sessionId: sessionId});
+    return {
+        responseMessage: message,
+        outboundMessageId: response.messageId,
+        sessionId: sessionId,
+        sessionVariables: {useCaseId: useCase.useCase, channel: recipient.channel, sessionId: sessionId}
+    }
 }
 
 const processMessage = async (useCases, recipient, message) => {
+    let responseMessage = null
+
     if(useCases.Items.find(useCase => useCase.useCase.toLowerCase().trim() === recipient.messageBody.toLowerCase().trim())){ 
         //Did we receive a word that matches one of our useCases?
         await DynamoDBService.deleteItemsByPartitionKey(process.env.CONTEXT_DYNAMODB_TABLE, 'phoneNumber', recipient.destinationAddress)
@@ -131,26 +146,48 @@ const processMessage = async (useCases, recipient, message) => {
         let sessionId = randomUUID()
 
         //Send Initial Message
-        await sendResponse(useCase, recipient, recipient.messageBody, useCase.initialMessage, useCase.initialImageId, sessionId, {useCaseId: useCase.useCase, channel: recipient.channel, sessionId: sessionId});
+        responseMessage = useCase.initialMessage
+        const sendResponseResult = await sendResponse(useCase, recipient, message, responseMessage, useCase.initialImageId, sessionId, {useCaseId: useCase.useCase, channel: recipient.channel, sessionId: sessionId});
+        
+        return {
+            responseMessage: responseMessage,
+            outboundMessage: sendResponseResult.outboundMessage,
+            outboundMessageId: sendResponseResult.response.messageId,
+            sessionId: sendResponseResult.sessionId,
+            sessionVariables: sendResponseResult.sessionVariables
+        }
 
     } else {
 
         //Get Conversation
         let conversation = await getConversation(recipient.destinationAddress, recipient.channel)
 
-        //Set Session and UseCase Ids if we have them.
-        let llmSessionId = false
         let sessionVariables = {}
-        if (conversation[conversation.length - 1]?.sessionVariables?.llmSessionId) sessionVariables.llmSessionId = conversation[conversation.length - 1].sessionVariables.llmSessionId
-        if (conversation[conversation.length - 1]?.sessionId) sessionVariables.sessionId = conversation[conversation.length - 1].sessionVariables.sessionId
-        if (conversation[conversation.length - 1]?.sessionVariables?.useCaseId) sessionVariables.useCaseId = conversation[conversation.length - 1].sessionVariables.useCaseId
-        if (conversation[conversation.length - 1]?.sessionVariables?.channel) sessionVariables.channel = conversation[conversation.length - 1].sessionVariables.channel
 
+        // Use passed-in useCaseId if provided, otherwise fall back to conversation history
+        sessionVariables.useCaseId = recipient.useCaseId || conversation[conversation.length - 1]?.sessionVariables?.useCaseId
+        // set random sessionId if no previous conversation
+        sessionVariables.sessionId =  randomUUID() || conversation[conversation.length - 1]?.sessionVariables?.sessionId
+
+        if (conversation[conversation.length - 1]?.sessionVariables?.llmSessionId) sessionVariables.llmSessionId = conversation[conversation.length - 1].sessionVariables.llmSessionId
+        if (conversation[conversation.length - 1]?.sessionVariables?.channel) sessionVariables.channel = conversation[conversation.length - 1].sessionVariables.channel
+        
         let useCase = useCases.Items.find(useCase => useCase.useCase.toLowerCase().trim() === sessionVariables.useCaseId)
+        console.trace('Determined Use Case: ', JSON.stringify(useCase, null, 2))
+
         //Call the response generator lambda
         let response = await LambdaService.invoke(useCase.responseGeneratorLambdaName, {useCase, recipient, conversation, sessionVariables})
+        responseMessage = response.response
 
-        await sendResponse(useCase, recipient, recipient.messageBody, response.response, null,sessionVariables.sessionId, sessionVariables)
+        const sendResponseResult = await sendResponse(useCase, recipient, message, responseMessage, null, sessionVariables.sessionId, sessionVariables)
+        
+        return {
+            responseMessage: responseMessage,
+            outboundMessage: sendResponseResult.outboundMessage,
+            outboundMessageId: sendResponseResult.response.messageId,
+            sessionId: sendResponseResult.sessionId,
+            sessionVariables: sendResponseResult.sessionVariables
+        }
     }
 }
 
@@ -165,15 +202,21 @@ const processTemplate = async (useCase, recipient, message) => {
 
         console.trace('response: ', response)
 
-        // Write outbound message to storage
+        // Return data needed for storage operations in main handler
         let sessionId = randomUUID()
-        await writeMessageToStorage(recipient, 'outbound', channel.channel, message, response.messageId, sessionId, {useCaseId: useCase.useCase, channel: recipient.channel, sessionId: sessionId}  );
+        return {
+            responseMessage: message,
+            outboundMessageId: response.messageId,
+            sessionId: sessionId,
+            sessionVariables: {useCaseId: useCase.useCase, channel: recipient.channel, sessionId: sessionId}
+        }
     } else {
         throw new Error('Unsupported channel: ' + channel.channel)
     }
+
 }
 
-exports.handler = async (event, context, callback) => {
+exports.handler = async (event, _context, callback) => {
     try {
         console.info("App Version:", process.env.APPLICATION_VERSION)
         console.trace(`Event: `, JSON.stringify(event,null,2));
@@ -184,53 +227,67 @@ exports.handler = async (event, context, callback) => {
             cache.set('useCases', useCases, 300); // Cache for 5 minutes
         }
 
-        let recipients = []
+        let inboundMessage = null
 
-        if (event.recipients && event.recipients.length > 0) { //Direct Call
-            recipients = event.recipients
+        if (event.inboundMessage) { //Direct Call
+            inboundMessage = event.inboundMessage
         } else if (event.body) { //API Gateway Call
             let body = JSON.parse(event.body)
             console.trace('body: ', body)
-            if (body.recipients && body.recipients.length > 0) {
-                recipients = body.recipients
+            if (body.inboundMessage) {
+                inboundMessage = body.inboundMessage
             } else {
-                throw new Error('No recipients found1')
+                throw new Error('No inboundMessage found in event.body')
             }
         } else {
-            throw new Error('No recipients found2')
+            throw new Error('No inboundMessage found in event')
         }
 
-        console.trace('recipients: ', recipients)
+        console.trace('inboundMessage: ', inboundMessage)
 
-        for (const recipient of recipients) {
-            console.trace(`Recipient: `, recipient);
-            let channel = recipient.channel
-            if(!channel) {
-                //Call the Channel Finder Lambda to determine the channel
-                let channelResponse = await LambdaService.invoke(process.env.CHANNEL_FINDER_LAMBDA_NAME, {recipient})
-                channel = channelResponse.channel
-            }
-            let message = recipient.messageBody 
-            let useCase = null
-
-            switch(recipient.action){
-                case 'forward':
-                    //Forward the message as is to the recipient
-                    useCase = useCases.Items.find(useCase => useCase.useCase.toLowerCase().trim() === recipient.useCaseId)
-                    await forwardMessage(recipient, message, useCase, recipient.imageId)
-                    break;
-                case 'process':
-                    await processMessage(useCases, recipient, message)
-                    break;
-                case 'template':
-                    useCase = useCases.Items.find(useCase => useCase.useCase.toLowerCase().trim() === recipient.useCaseId)
-                    await processTemplate(useCase, recipient, message)
-                    break;
-                default:
-                    break;
-            }  
+        let channel = inboundMessage.channel
+        if(!channel) {
+            //Call the Channel Finder Lambda to determine the channel
+            let channelResponse = await LambdaService.invoke(process.env.CHANNEL_FINDER_LAMBDA_NAME, {recipient: inboundMessage})
+            channel = channelResponse.channel
         }
-        callback(null,{'processedRecipients': recipients.length})
+
+        if(!inboundMessage.inboundMessageId) inboundMessage.inboundMessageId = randomUUID();
+
+        let message = inboundMessage.messageBody 
+        let useCase = null
+        let responseMessage = null
+        let actionResult = null
+        switch(inboundMessage.action){
+            case 'forward':
+                //Forward the message as is to the inboundMessage sender
+                useCase = useCases.Items.find(useCase => useCase.useCase.toLowerCase().trim() === inboundMessage.useCaseId)
+                actionResult = await forwardMessage(inboundMessage, message, useCase, inboundMessage.imageId)
+                responseMessage = actionResult.responseMessage
+                
+                // Write outbound message to storage
+                await writeMessageToStorage(inboundMessage, 'outbound', channel, message, actionResult.outboundMessageId, actionResult.sessionId, actionResult.sessionVariables);
+                break;
+            case 'process':
+                actionResult = await processMessage(useCases, inboundMessage, message)
+                responseMessage = actionResult.responseMessage
+                
+                // Write messages to storage
+                await writeMessageToStorage(inboundMessage, 'inbound', channel, message, inboundMessage.inboundMessageId, actionResult.sessionId, actionResult.sessionVariables);
+                await writeMessageToStorage(inboundMessage, 'outbound', channel, actionResult.outboundMessage, actionResult.outboundMessageId, actionResult.sessionId, actionResult.sessionVariables);
+                break;
+            case 'template':
+                useCase = useCases.Items.find(useCase => useCase.useCase.toLowerCase().trim() === inboundMessage.useCaseId)
+                actionResult = await processTemplate(useCase, inboundMessage, message)
+                responseMessage = actionResult.responseMessage
+                
+                // Write outbound message to storage
+                await writeMessageToStorage(inboundMessage, 'outbound', channel, message, actionResult.outboundMessageId, actionResult.sessionId, actionResult.sessionVariables);
+                break;
+            default:
+                break;
+        }  
+        callback(null,{'responseMessage': responseMessage})
     }
     catch (error) {
         console.error(error);

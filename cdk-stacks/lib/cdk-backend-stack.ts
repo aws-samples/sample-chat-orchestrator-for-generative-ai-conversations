@@ -143,6 +143,8 @@ export class CdkBackendStack extends Stack {
       entry: path.join(__dirname, 'lambdas/handlers/node/customResource.mjs'),
       timeout: Duration.seconds(30),
       memorySize: 512,
+      logFormat: 'JSON',
+      applicationLogLevel: 'TRACE',
       initialPolicy: 
       [
         new iam.PolicyStatement({

@@ -208,21 +208,23 @@ When a user sends "agent" to start an Agent conversation, the solution looks up 
 ## REST API (Optional)
 If you opted to deploy the optional API, the solution will create an API Gateway REST API with a single `sendMessages` method that you can **POST** information to.  
 
-The API accepts a **POST** request with a JSON body containing an array of recipient objects. Each recipient object has the following structure:
+The API accepts a **POST** request with a JSON body containing an `inboundMessage` object with the following structure:
 
-- `recipients` - Array of recipient objects:
+- `inboundMessage` - Object containing message details:
   - `action` - The action to take 
     - `forward` - Just send the message to the user using the specified channel.
     - `process` - Used by internal SMS and WhatsApp triggers and will send the message to the KB or Agent for processing.
     - `template` - Sends a WhatsApp Template message to the user.  See [below](#working-with-whatsapp-template-messages) for more information.
-  - `channel` - The messaging channel ("sms", "whatsapp", or "email")
+  - `channel` - The messaging channel ("sms", "whatsapp", "email", or "API")
+    - Use "API" to return the response message in the API response without sending via another channel
   - `destinationAddress` - The destination address of the recipient ([E.164 format](https://en.wikipedia.org/wiki/E.164))
     - For SMS and WhatsApp this is the phone number in [E.164 format](https://en.wikipedia.org/wiki/E.164)
     - For Email this is the email address
+    - For API channel, this can be a session identifier or user ID
   - `messageBody` - The text content of the message
   - `subject` - The subject of the email message (Email only)
   - `fromAddress` - The email address to send the message from (Email only)
-  - `configurationSet` - (OPTIONAL)The configuration set to use for the email message (Email only)
+  - `configurationSet` - (OPTIONAL) The configuration set to use for the email message (Email only)
   - `useCaseId` - The use case identifier ("kb" for Knowledge Base or "agent" for Bedrock Agent)
   - `imageId` - If specified, will send an image along with the message.
     - For SMS this needs to be an S3URI of an image to display using MMS.  See [below](#working-with-mms-images) for more information.
@@ -230,7 +232,7 @@ The API accepts a **POST** request with a JSON body containing an array of recip
 
 The API has IAM authorization enabled.  The solution will create an IAM user with the necessary IAM permissions to execute the API.  The username is output by the CDK deployment or you can open up the CloudFormation deployment and find `APIIAMUserName` in the Outputs Tab.
 
-You will need to create an [Access Key](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html) for this user to make REST API calls
+You will need to create an [Access Key ID](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html) for this user to make REST API calls
 
 **Important**: IAM users with access keys are an account security risk. Manage your access keys securely. Do not provide your access keys to unauthorized parties, even to help find your account identifiers. By doing this, you might give someone permanent access to your account.
 
@@ -251,13 +253,13 @@ You can use `CURL` to test the REST API:
 curl "[API REST Endpoint]/sendMessages" \
 --request POST \
 --aws-sigv4 "aws:amz:us-east-1:execute-api" \
---user "[Access Key]":"[Access Key Secret]" \
---data '{"recipients":[{"action":"forward", "channel":"email","destinationAddress":"[Destination Address (Email format)]","fromAddress":"[From Address (Email format)]","subject":"This is a test message?","messageBody":"This is a test message Body?","useCaseId": "api"}]}' \
+--user "[Access Key ID]":"[Secret Access Key]" \
+--data '{"inboundMessage":{"action":"forward", "channel":"email","destinationAddress":"[Destination Address (Email format)]","fromAddress":"[From Address (Email format)]","subject":"This is a test message?","messageBody":"This is a test message Body?","useCaseId": "agent"}}' \
 --header 'Content-Type: application/json'
 ```
 
 - [API REST Endpoint]: This is output by the CDK deployment or you can open up the CloudFormation deployment and find the `APIEndpointURL` in the Outputs Tab.
-- [Access Key] & [Access Key Secret]: Created when you enable an Access Key for the user created by the solution. The username is output by the CDK deployment or you can open up the CloudFormation deployment and find `APIIAMUserName` in the Outputs Tab.
+- [Access Key ID] & [Secret Access Key]: Created when you enable an Access Key for the user created by the solution. The username is output by the CDK deployment or you can open up the CloudFormation deployment and find `APIIAMUserName` in the Outputs Tab.
 - [Destination Address]: The destination email address
 - [From Address]: The email address to send the message from.  Must be an active email identity in SES.
 
@@ -266,14 +268,31 @@ curl "[API REST Endpoint]/sendMessages" \
 curl "[API REST Endpoint]/sendMessages" \
 --request POST \
 --aws-sigv4 "aws:amz:us-east-1:execute-api" \
---user "[Access Key]":"[Access Key Secret]" \
---data '{"recipients":[{"action":"forward", "channel":"sms","originationNumber": "[Destination Address (E.164 format)]","messageBody":"This is a test message?", "useCaseId": "api"}]}' \
+--user "[Access Key ID]":"[Secret Access Key]" \
+--data '{"inboundMessage":{"action":"forward", "channel":"sms","destinationAddress": "[Destination Address (E.164 format)]","messageBody":"This is a test message?", "useCaseId": "agent"}}' \
 --header 'Content-Type: application/json'
 ```
 
 - [API REST Endpoint]: This is output by the CDK deployment or you can open up the CloudFormation deployment and find the `APIEndpointURL` in the Outputs Tab.
-- [Access Key] & [Access Key Secret]: Created when you enable an Access Key for the user created by the solution. The username is output by the CDK deployment or you can open up the CloudFormation deployment and find `APIIAMUserName` in the Outputs Tab.
+- [Access Key ID] & [Secret Access Key]: Created when you enable an Access Key for the user created by the solution. The username is output by the CDK deployment or you can open up the CloudFormation deployment and find `APIIAMUserName` in the Outputs Tab.
 - [Destination Address]: The destination phone number in [E.164 format](https://en.wikipedia.org/wiki/E.164)
+
+#### Response via API
+
+This allows you to integrate the AI response capabilities into web applications, chatbots, or other systems without requiring SMS, WhatsApp, or Email delivery.
+
+```bash
+curl "[API REST Endpoint]/sendMessages" \
+--request POST \
+--aws-sigv4 "aws:amz:us-east-1:execute-api" \
+--user "[Access Key ID]":"[Secret Access Key]" \
+--data '{"inboundMessage":{"action":"process", "channel":"API","destinationAddress":"[Destination Address]","messageBody":"What are your business hours?", "useCaseId": "kb"}}' \
+--header 'Content-Type: application/json'
+```
+
+- [API REST Endpoint]: This is output by the CDK deployment or you can open up the CloudFormation deployment and find the `APIEndpointURL` in the Outputs Tab.
+- [Access Key ID] & [Secret Access Key]: Created when you enable an Access Key for the user created by the solution. The username is output by the CDK deployment or you can open up the CloudFormation deployment and find `APIIAMUserName` in the Outputs Tab.
+- [Destination Address]: Use a session or user identifier (not necessarily an actual phone number)
 
 #### WhatsApp Template Messages
 You can use message templates for message types that you use frequently, such as weekly newsletters or appointment reminders. Template messages are the only type of message that can be sent to customers who have yet to message you, or who have not sent you a message in the last 24 hours.
@@ -283,31 +302,29 @@ You can use message templates for message types that you use frequently, such as
 - Create a `messages.json` file with the following content
 ```json
 {
-    "recipients": [
-        {
-            "action": "template",
-            "channel": "whatsapp",
-            "destinationAddress": "[Destination Address (E.164 format)]",
-            "messageBody": {
-                "name": "[Template Name]",
-                "language": {
-                    "code": "en"
-                },
-                "components": [
-                    {
-                        "type": "body",
-                        "parameters": [
-                            {
-                                "text": "[Users First Name]",
-                                "type": "text"
-                            }
-                        ]
-                    }
-                ]
+    "inboundMessage": {
+        "action": "template",
+        "channel": "whatsapp",
+        "destinationAddress": "[Destination Address (E.164 format)]",
+        "messageBody": {
+            "name": "[Template Name]",
+            "language": {
+                "code": "en"
             },
-            "useCaseId": "api"
-        }
-    ]
+            "components": [
+                {
+                    "type": "body",
+                    "parameters": [
+                        {
+                            "text": "[Users First Name]",
+                            "type": "text"
+                        }
+                    ]
+                }
+            ]
+        },
+        "useCaseId": "agent"
+    }
 }
 ```
 
@@ -318,7 +335,7 @@ You can use message templates for message types that you use frequently, such as
 curl "[API REST Endpoint]/sendMessages" \
 --request POST \
 --aws-sigv4 "aws:amz:us-east-1:execute-api" \
---user "[Access Key]":"[Access Key Secret]" \
+--user "[Access Key ID]":"[Secret Access Key]" \
 --data @messages.json \
 --header 'Content-Type: application/json'
 ```

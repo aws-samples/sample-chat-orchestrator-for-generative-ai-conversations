@@ -29,3 +29,6 @@ build
 scratchpad
 
 .DS_Store
+
+# Kiro steering docs
+.kiro
