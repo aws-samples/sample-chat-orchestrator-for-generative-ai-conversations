@@ -1,0 +1,425 @@
+[
+  {
+    "id": "info-then-price-no-repeat",
+    "description": "The prospect asks for general info, then asks price. The second answer must answer price directly without repeating a full product presentation.",
+    "turns": [
+      {
+        "message": "Bonjour, c'est quoi Miira-Cell+ ?",
+        "expected": {
+          "classification": {
+            "primaryIntent": "information_request",
+            "purchaseStage": "information",
+            "shouldNotifySales": false
+          },
+          "policy": {
+            "nextBestAction": "answer_information_then_resume_sales_flow",
+            "mustAnswer": ["information"]
+          },
+          "response": {
+            "mustInclude": ["Miira-Cell"],
+            "mustExclude": ["guerit", "guerison totale", "soigne definitivement"]
+          }
+        }
+      },
+      {
+        "message": "Et le prix ?",
+        "expected": {
+          "classification": {
+            "primaryIntent": "price_inquiry",
+            "purchaseStage": "none",
+            "shouldNotifySales": false
+          },
+          "policy": {
+            "nextBestAction": "answer_price_directly_then_one_soft_next_question",
+            "mustAnswer": ["price"]
+          },
+          "response": {
+            "mustInclude": ["43 000", "86 000"],
+            "mustExclude": ["guerit", "guerison totale", "soigne definitivement"],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "location-then-medical-safety",
+    "description": "The prospect gives a location, then raises a medical condition. The agent must not ask the location again and must recommend the PACK BRONZE while keeping medical safety language.",
+    "turns": [
+      {
+        "message": "Je suis a Libreville au Gabon",
+        "expected": {
+          "classification": {
+            "primaryIntent": "delivery_or_availability_question",
+            "deliveryLocation": "Libreville au Gabon",
+            "shouldNotifySales": false
+          },
+          "policy": {
+            "nextBestAction": "answer_delivery_or_availability_before_sales_question",
+            "mustAnswer": ["delivery"]
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.knownProspectInfo.deliveryLocation": "Libreville au Gabon"
+            }
+          }
+        }
+      },
+      {
+        "message": "Je souffre du diabete, je peux prendre ?",
+        "expected": {
+          "classification": {
+            "primaryIntent": "health_condition_question",
+            "medicalConcern": true,
+            "shouldNotifySales": false
+          },
+          "policy": {
+            "nextBestAction": "give_medical_safety_response_without_sales_push",
+            "mustAvoid": ["sales_push"]
+          },
+          "response": {
+            "exact": "Dans votre cas, je vous recommande simplement de commencer avec le PACK BRONZE de 2 boîtes de Miira-Cell+ à 86 000 FCFA."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "quantity-then-payment-link",
+    "description": "The prospect selects quantity, then asks to pay online. The agent must keep quantity and provide the correct payment path.",
+    "turns": [
+      {
+        "message": "Je prends 2 boites svp",
+        "expected": {
+          "classification": {
+            "primaryIntent": "purchase_intent",
+            "purchaseStage": "quantity_selected",
+            "quantity": 2,
+            "shouldNotifySales": true
+          },
+          "policy": {
+            "nextBestAction": "confirm_pack_or_quantity_without_repeating_full_pitch",
+            "mustAnswer": ["purchase"]
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.knownProspectInfo.quantity": [2, "2"]
+            }
+          }
+        }
+      },
+      {
+        "message": "Je veux payer par Wave",
+        "expected": {
+          "classification": {
+            "primaryIntent": "payment_question",
+            "purchaseStage": "payment_pending",
+            "paymentMode": "wave"
+          },
+          "policy": {
+            "nextBestAction": "answer_payment_options_and_include_link_only_when_quantity_is_clear",
+            "mustAnswer": ["payment"],
+            "mustNotRepeat": ["ask_quantity"]
+          },
+          "response": {
+            "mustInclude": ["https://miiragenesia.mymaketou.store/fr/products/miira-cell-1/checkout"],
+            "mustExclude": ["combien de boites", "combien de boîtes"]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "healing-specific-condition-bronze-only",
+    "description": "When the prospect asks whether the product also cures a named condition, the agent must answer with the exact PACK BRONZE recommendation and nothing else.",
+    "turns": [
+      {
+        "message": "Est ce que ça guéri aussi l'arthrose",
+        "expected": {
+          "classification": {
+            "primaryIntent": "health_condition_question",
+            "medicalConcern": true,
+            "shouldNotifySales": false
+          },
+          "policy": {
+            "nextBestAction": "give_medical_safety_response_without_sales_push",
+            "mustAvoid": ["sales_push"]
+          },
+          "response": {
+            "exact": "Dans votre cas, je vous recommande simplement de commencer avec le PACK BRONZE de 2 boîtes de Miira-Cell+ à 86 000 FCFA."
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "deferral-no-hard-sell",
+    "description": "After a price question, the prospect defers. The agent should acknowledge and ask one blocker, not push confirmation.",
+    "turns": [
+      {
+        "message": "Le prix svp",
+        "expected": {
+          "classification": {
+            "primaryIntent": "price_inquiry",
+            "shouldNotifySales": false
+          },
+          "response": {
+            "mustInclude": ["43 000"]
+          }
+        }
+      },
+      {
+        "message": "Ok merci je vais reflechir",
+        "expected": {
+          "classification": {
+            "primaryIntent": "follow_up_or_deferral",
+            "purchaseStage": "none",
+            "shouldNotifySales": false
+          },
+          "policy": {
+            "nextBestAction": "acknowledge_deferral_and_ask_one_blocker_only",
+            "mustAnswer": ["follow_up"]
+          },
+          "response": {
+            "mustExclude": ["validez cette commande", "confirmez cette commande", "lieu de livraison"]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "abidjan-info-price-deferral",
+    "description": "Scenario derive de CONVERSATIONS/abidjan-info-price-deferral.csv: le prospect demande des informations, indique qu'il va prendre connaissance en precisant Abidjan (Cote d'Ivoire), demande ensuite le prix d'une boite, puis temporise. L'agent doit repondre sans repeter le pitch complet, conserver le contexte de localisation et quantite, et eviter toute relance commerciale insistante apres temporisation.",
+    "turns": [
+      {
+        "message": "Bonjour ! Puis-je en savoir plus à ce sujet ?",
+        "expected": {
+          "classification": {
+            "primaryIntent": "information_request",
+            "purchaseStage": "information",
+            "secondaryIntents": [],
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.75
+          },
+          "policy": {
+            "nextBestAction": "answer_information_then_resume_sales_flow",
+            "mustAnswer": [
+              "information"
+            ],
+            "mustNotRepeat": [],
+            "mustAvoid": [
+              "medical_claims"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.75
+          },
+          "response": {
+            "mustInclude": [
+              "Miira-Cell",
+              "43 000",
+              "86 000"
+            ],
+            "mustExclude": [
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ]
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "information",
+              "strandsConversationState.currentIntent": "information_request",
+              "strandsConversationState.currentPurchaseStage": "information",
+              "strandsConversationState.recentTurnCount": 0
+            }
+          }
+        }
+      },
+      {
+        "message": "Ok je vais prendre connaissance et vous revenir je suis en Côte d'Ivoire Abidjan",
+        "expected": {
+          "classification": {
+            "primaryIntent": "purchase_intent",
+            "secondaryIntents": [],
+            "purchaseStage": "ready_to_order",
+            "quantity": null,
+            "deliveryLocation": null,
+            "paymentMode": null,
+            "objectionType": null,
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": true,
+            "confidence": 0.78
+          },
+          "policy": {
+            "nextBestAction": "confirm_pack_or_quantity_without_repeating_full_pitch",
+            "mustAnswer": [
+              "purchase"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.78
+          },
+          "response": {
+            "mustInclude": [
+              "43 000",
+              "86 000",
+              "PACK STARTER",
+              "PACK BRONZE"
+            ],
+            "mustExclude": [
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 2
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "purchase",
+              "strandsConversationState.currentIntent": "purchase_intent",
+              "strandsConversationState.currentPurchaseStage": "ready_to_order",
+              "strandsConversationState.knownProspectInfo.deliveryLocation": "Cote d'Ivoire",
+              "strandsConversationState.recentTurnCount": 2
+            }
+          }
+        }
+      },
+      {
+        "message": "Le prix d'une boîte est à combien",
+        "expected": {
+          "classification": {
+            "primaryIntent": "price_inquiry",
+            "secondaryIntents": [],
+            "purchaseStage": "none",
+            "quantity": null,
+            "deliveryLocation": null,
+            "paymentMode": null,
+            "objectionType": null,
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.86
+          },
+          "policy": {
+            "nextBestAction": "answer_price_directly_then_one_soft_next_question",
+            "mustAnswer": [
+              "price"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_delivery_location",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.86
+          },
+          "response": {
+            "mustInclude": [
+              "43 000"
+            ],
+            "mustExclude": [
+              "audios",
+              "document de presentation",
+              "Vous preferez commencer",
+              "faire la cure avec 2 boites",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "information",
+              "strandsConversationState.currentIntent": "price_inquiry",
+              "strandsConversationState.currentPurchaseStage": "none",
+              "strandsConversationState.knownProspectInfo.deliveryLocation": "Cote d'Ivoire",
+              "strandsConversationState.knownProspectInfo.quantity": "1",
+              "strandsConversationState.recentTurnCount": 4
+            }
+          }
+        }
+      },
+      {
+        "message": "Ok je vais organiser et vous faire signe",
+        "expected": {
+          "classification": {
+            "primaryIntent": "follow_up_or_deferral",
+            "secondaryIntents": [
+              "information_request",
+              "price_inquiry"
+            ],
+            "purchaseStage": "none",
+            "quantity": null,
+            "deliveryLocation": null,
+            "paymentMode": null,
+            "objectionType": "delay_or_follow_up",
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.86
+          },
+          "policy": {
+            "nextBestAction": "acknowledge_deferral_and_ask_one_blocker_only",
+            "mustAnswer": [
+              "follow_up",
+              "information",
+              "price"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_quantity",
+              "ask_delivery_location",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims",
+              "sales_push"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.86
+          },
+          "response": {
+            "mustExclude": [
+              "Vous preferez commencer",
+              "faire la cure avec 2 boites",
+              "PACK STARTER",
+              "PACK BRONZE",
+              "43 000",
+              "86 000",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 0
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "follow_up",
+              "strandsConversationState.currentIntent": "follow_up_or_deferral",
+              "strandsConversationState.currentPurchaseStage": "none",
+              "strandsConversationState.knownProspectInfo.deliveryLocation": "Cote d'Ivoire",
+              "strandsConversationState.knownProspectInfo.quantity": "1",
+              "strandsConversationState.recentTurnCount": 6
+            }
+          }
+        }
+      }
+    ]
+  }
+]

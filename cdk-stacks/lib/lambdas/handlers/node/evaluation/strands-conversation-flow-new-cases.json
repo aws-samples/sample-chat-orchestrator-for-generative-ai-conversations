@@ -1,0 +1,1391 @@
+[
+  {
+    "id": "gabon-info-price-quantity-change-confirm-then-deferral",
+    "description": "Scenario derive de +24107198151_results.csv (session c4797b30, prospect au Gabon): demande d'informations, puis prix, choisit d'abord 1 boite (PACK STARTER), CHANGE d'avis pour 2 boites (PACK BRONZE), confirme avec 'Ok', puis differe ('Je ne suis pas encore pret'). Verifie: (1) le changement de quantite 1->2 est pris en compte (la confirmation passe a 86 000 FCFA et ne reste pas a 43 000); (2) 'Ok' est traite comme confirmation de commande; (3) le report n'est PAS confondu avec une adresse de livraison (regression observee en prod: knownDeliveryLocation avait capture le texte du report) et l'agent ne pousse pas la vente, il accuse reception du report et demande un seul bloqueur.",
+    "turns": [
+      {
+        "message": "Bonjour ! Puis-je en savoir plus à ce sujet ?",
+        "expected": {
+          "classification": {
+            "primaryIntent": "information_request",
+            "secondaryIntents": [],
+            "purchaseStage": "information",
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.75
+          },
+          "policy": {
+            "nextBestAction": "answer_information_then_resume_sales_flow",
+            "mustAnswer": [
+              "information"
+            ],
+            "mustNotRepeat": [],
+            "mustAvoid": [
+              "medical_claims"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.75
+          },
+          "response": {
+            "mustInclude": [
+              "Miira-Cell"
+            ],
+            "mustExclude": [
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ]
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "information",
+              "strandsConversationState.currentIntent": "information_request",
+              "strandsConversationState.currentPurchaseStage": "information",
+              "strandsConversationState.recentTurnCount": 0
+            }
+          }
+        }
+      },
+      {
+        "message": "LE PRODUIT COÛTE COMBIEN. SVP",
+        "expected": {
+          "classification": {
+            "primaryIntent": "price_inquiry",
+            "secondaryIntents": [],
+            "purchaseStage": "none",
+            "quantity": null,
+            "deliveryLocation": null,
+            "paymentMode": null,
+            "objectionType": null,
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.86
+          },
+          "policy": {
+            "nextBestAction": "answer_price_directly_then_one_soft_next_question",
+            "mustAnswer": [
+              "price"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.86
+          },
+          "response": {
+            "mustInclude": [
+              "43 000",
+              "86 000"
+            ],
+            "mustExclude": [
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "information",
+              "strandsConversationState.currentIntent": "price_inquiry",
+              "strandsConversationState.currentPurchaseStage": "none",
+              "strandsConversationState.recentTurnCount": 2
+            }
+          }
+        }
+      },
+      {
+        "message": "Je prends 1 boîte (PACK STARTER).",
+        "expected": {
+          "classification": {
+            "primaryIntent": "purchase_intent",
+            "secondaryIntents": [],
+            "purchaseStage": "quantity_selected",
+            "quantity": 1,
+            "deliveryLocation": null,
+            "paymentMode": null,
+            "objectionType": null,
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": true,
+            "confidence": 0.82
+          },
+          "policy": {
+            "nextBestAction": "confirm_pack_or_quantity_without_repeating_full_pitch",
+            "mustAnswer": [
+              "purchase"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_quantity",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.82
+          },
+          "response": {
+            "mustInclude": [
+              "43 000"
+            ],
+            "mustExclude": [
+              "combien de boites",
+              "combien de boîtes",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "purchase",
+              "strandsConversationState.currentIntent": "purchase_intent",
+              "strandsConversationState.currentPurchaseStage": "quantity_selected",
+              "strandsConversationState.knownProspectInfo.quantity": [1, "1"],
+              "strandsConversationState.recentTurnCount": 4
+            }
+          }
+        }
+      },
+      {
+        "message": "Je prends 2 boîtes (PACK BRONZE).",
+        "expected": {
+          "classification": {
+            "primaryIntent": "purchase_intent",
+            "secondaryIntents": [],
+            "purchaseStage": "quantity_selected",
+            "quantity": 2,
+            "deliveryLocation": null,
+            "paymentMode": null,
+            "objectionType": null,
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": true,
+            "confidence": 0.82
+          },
+          "policy": {
+            "nextBestAction": "confirm_pack_or_quantity_without_repeating_full_pitch",
+            "mustAnswer": [
+              "purchase"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_quantity",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.82
+          },
+          "response": {
+            "mustInclude": [
+              "86 000"
+            ],
+            "mustExclude": [
+              "43 000",
+              "combien de boites",
+              "combien de boîtes",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "purchase",
+              "strandsConversationState.currentIntent": "purchase_intent",
+              "strandsConversationState.currentPurchaseStage": "quantity_selected",
+              "strandsConversationState.knownProspectInfo.quantity": [2, "2"],
+              "strandsConversationState.recentTurnCount": 6
+            }
+          }
+        }
+      },
+      {
+        "message": "Ok",
+        "expected": {
+          "classification": {
+            "primaryIntent": "purchase_intent",
+            "secondaryIntents": [],
+            "purchaseStage": "order_confirmation",
+            "quantity": 2,
+            "deliveryLocation": null,
+            "paymentMode": null,
+            "objectionType": null,
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": true,
+            "confidence": 0.88
+          },
+          "policy": {
+            "nextBestAction": "confirm_order_and_collect_missing_payment_or_delivery_detail",
+            "mustAnswer": [
+              "purchase"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_quantity",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.88
+          },
+          "response": {
+            "mustInclude": [
+              "86 000",
+              "payer à la livraison",
+              "Mobile Money"
+            ],
+            "mustExclude": [
+              "43 000",
+              "combien de boites",
+              "combien de boîtes",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 2
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "confirmation",
+              "strandsConversationState.currentIntent": "purchase_intent",
+              "strandsConversationState.currentPurchaseStage": "order_confirmation",
+              "strandsConversationState.knownProspectInfo.quantity": [2, "2"],
+              "strandsConversationState.recentTurnCount": 8
+            }
+          }
+        }
+      },
+      {
+        "message": "Je ne suis pas encore prêt Svp",
+        "expected": {
+          "classification": {
+            "primaryIntent": "follow_up_or_deferral",
+            "secondaryIntents": [
+              "delivery_or_availability_question"
+            ],
+            "purchaseStage": "none",
+            "quantity": 2,
+            "deliveryLocation": null,
+            "paymentMode": null,
+            "objectionType": "delay_or_follow_up",
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.6
+          },
+          "policy": {
+            "nextBestAction": "acknowledge_deferral_and_ask_one_blocker_only",
+            "mustAnswer": [
+              "follow_up",
+              "delivery"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_quantity",
+              "ask_delivery_location",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims",
+              "sales_push"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.6
+          },
+          "response": {
+            "mustExclude": [
+              "à Je ne suis pas encore prêt",
+              "à J,ne suis pas encore prêt",
+              "livraison à Je ne suis pas encore prêt",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "follow_up",
+              "strandsConversationState.currentIntent": "follow_up_or_deferral",
+              "strandsConversationState.currentPurchaseStage": "none",
+              "strandsConversationState.knownProspectInfo.quantity": [2, "2"],
+              "strandsConversationState.knownProspectInfo.deliveryLocation": null,
+              "strandsConversationState.recentTurnCount": 10
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "abidjan-info-delivery-price-composition-medical-then-deferral",
+    "description": "Scenario derive de +22507317655_results.csv (session 3a44f370, prospect a Abidjan): demande d'info, puis 'Le prix, comment s'en procurer ? Je suis a Abidjan', puis prix, puis composition (poudre/gelules/comprimes), puis question medicale (hypertension, hernie discale), puis report budget ('On va chercher l'argent'), puis 'Ok'. Verifie: (1) le lieu de livraison capture 'Abidjan' et n'est PAS ecrase par 'procurer' issu de 'comment s'en procurer' (regression observee en prod: knownProspectInfo.deliveryLocation valait 'procurer'); (2) la question medicale recoit une reponse de securite SANS push de vente: l'agent ne doit PAS recommander le PACK BRONZE ni 86 000 FCFA (regression en prod ou l'agent a pousse le PACK BRONZE malgre mustAvoid sales_push et nextBestAction give_medical_safety_response_without_sales_push); (3) apres le tour medical, medicalConcern reste sticky dans l'etat mais ne re-route pas le flux: les reports budget sont accuses sans relance commerciale.",
+    "turns": [
+      {
+        "message": "Bonjour ! Puis-je en savoir plus à ce sujet ?",
+        "expected": {
+          "classification": {
+            "primaryIntent": "information_request",
+            "secondaryIntents": [],
+            "purchaseStage": "information",
+            "quantity": null,
+            "deliveryLocation": null,
+            "paymentMode": null,
+            "objectionType": null,
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.75
+          },
+          "policy": {
+            "nextBestAction": "answer_information_then_resume_sales_flow",
+            "mustAnswer": [
+              "information"
+            ],
+            "mustNotRepeat": [],
+            "mustAvoid": [
+              "medical_claims"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.75
+          },
+          "response": {
+            "mustInclude": [
+              "Miira-Cell"
+            ],
+            "mustExclude": [
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ]
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "information",
+              "strandsConversationState.currentIntent": "information_request",
+              "strandsConversationState.currentPurchaseStage": "information",
+              "strandsConversationState.recentTurnCount": 0
+            }
+          }
+        }
+      },
+      {
+        "message": "Le prix, comment s'en procurer ? Je suis à Abidjan",
+        "expected": {
+          "classification": {
+            "primaryIntent": "delivery_or_availability_question",
+            "secondaryIntents": [],
+            "purchaseStage": "none",
+            "quantity": null,
+            "deliveryLocation": "Abidjan",
+            "paymentMode": null,
+            "objectionType": "availability",
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.84
+          },
+          "policy": {
+            "nextBestAction": "answer_delivery_or_availability_before_sales_question",
+            "mustAnswer": [
+              "delivery"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_delivery_location",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.84
+          },
+          "response": {
+            "mustExclude": [
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "information",
+              "strandsConversationState.previousIntent": "information_request",
+              "strandsConversationState.currentIntent": "delivery_or_availability_question",
+              "strandsConversationState.currentPurchaseStage": "none",
+              "strandsConversationState.knownProspectInfo.deliveryLocation": "Abidjan",
+              "strandsConversationState.recentTurnCount": 2
+            }
+          }
+        }
+      },
+      {
+        "message": "Le prix du produit ?",
+        "expected": {
+          "classification": {
+            "primaryIntent": "price_inquiry",
+            "secondaryIntents": [],
+            "purchaseStage": "none",
+            "quantity": null,
+            "deliveryLocation": null,
+            "paymentMode": null,
+            "objectionType": null,
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.86
+          },
+          "policy": {
+            "nextBestAction": "answer_price_directly_then_one_soft_next_question",
+            "mustAnswer": [
+              "price"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_delivery_location",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.86
+          },
+          "response": {
+            "mustInclude": [
+              "43 000",
+              "86 000"
+            ],
+            "mustExclude": [
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "information",
+              "strandsConversationState.previousIntent": "delivery_or_availability_question",
+              "strandsConversationState.currentIntent": "price_inquiry",
+              "strandsConversationState.currentPurchaseStage": "none",
+              "strandsConversationState.knownProspectInfo.deliveryLocation": "Abidjan",
+              "strandsConversationState.recentTurnCount": 4
+            }
+          }
+        }
+      },
+      {
+        "message": "Est-ce une poudre, des gélules ou des comprime",
+        "expected": {
+          "classification": {
+            "primaryIntent": "product_composition_question",
+            "secondaryIntents": [],
+            "purchaseStage": "none",
+            "quantity": null,
+            "deliveryLocation": null,
+            "paymentMode": null,
+            "objectionType": null,
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.7
+          },
+          "policy": {
+            "nextBestAction": "answer_composition_without_inventing",
+            "mustAnswer": [
+              "composition"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_delivery_location",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.7
+          },
+          "response": {
+            "mustInclude": [
+              "poudre"
+            ],
+            "mustExclude": [
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "information",
+              "strandsConversationState.previousIntent": "price_inquiry",
+              "strandsConversationState.currentIntent": "product_composition_question",
+              "strandsConversationState.currentPurchaseStage": "none",
+              "strandsConversationState.knownProspectInfo.deliveryLocation": "Abidjan",
+              "strandsConversationState.recentTurnCount": 6
+            }
+          }
+        }
+      },
+      {
+        "message": "Je suis hypertension,  hernie discale. Que faire",
+        "expected": {
+          "classification": {
+            "primaryIntent": "health_condition_question",
+            "secondaryIntents": [],
+            "purchaseStage": "none",
+            "quantity": null,
+            "deliveryLocation": null,
+            "paymentMode": null,
+            "objectionType": "safety_or_medical",
+            "medicalConcern": true,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.88
+          },
+          "policy": {
+            "nextBestAction": "give_medical_safety_response_without_sales_push",
+            "mustAnswer": [
+              "medical_safety"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_delivery_location",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims",
+              "sales_push"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.88
+          },
+          "response": {
+            "mustExclude": [
+              "PACK BRONZE",
+              "86 000",
+              "je vous recommande simplement de commencer",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "safety",
+              "strandsConversationState.previousIntent": "product_composition_question",
+              "strandsConversationState.currentIntent": "health_condition_question",
+              "strandsConversationState.currentPurchaseStage": "none",
+              "strandsConversationState.knownProspectInfo.medicalConcern": true,
+              "strandsConversationState.knownProspectInfo.deliveryLocation": "Abidjan",
+              "strandsConversationState.recentTurnCount": 8
+            }
+          }
+        }
+      },
+      {
+        "message": "C'est bien noté. On va chercher l'argent",
+        "expected": {
+          "classification": {
+            "primaryIntent": "follow_up_or_deferral",
+            "secondaryIntents": [],
+            "purchaseStage": "none",
+            "quantity": null,
+            "deliveryLocation": null,
+            "paymentMode": null,
+            "objectionType": "delay_or_follow_up",
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.86
+          },
+          "policy": {
+            "nextBestAction": "acknowledge_deferral_and_ask_one_blocker_only",
+            "mustAnswer": [
+              "follow_up"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_delivery_location",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims",
+              "sales_push"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.86
+          },
+          "response": {
+            "mustExclude": [
+              "PACK BRONZE",
+              "je vous recommande simplement de commencer",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "follow_up",
+              "strandsConversationState.previousIntent": "health_condition_question",
+              "strandsConversationState.currentIntent": "follow_up_or_deferral",
+              "strandsConversationState.currentPurchaseStage": "none",
+              "strandsConversationState.knownProspectInfo.medicalConcern": true,
+              "strandsConversationState.knownProspectInfo.deliveryLocation": "Abidjan",
+              "strandsConversationState.recentTurnCount": 10
+            }
+          }
+        }
+      },
+      {
+        "message": "Ok",
+        "expected": {
+          "classification": {
+            "primaryIntent": "follow_up_or_deferral",
+            "secondaryIntents": [],
+            "purchaseStage": "none",
+            "quantity": null,
+            "deliveryLocation": null,
+            "paymentMode": null,
+            "objectionType": "delay_or_follow_up",
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.8
+          },
+          "policy": {
+            "nextBestAction": "acknowledge_deferral_and_ask_one_blocker_only",
+            "mustAnswer": [
+              "follow_up"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_delivery_location",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims",
+              "sales_push"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.8
+          },
+          "response": {
+            "mustExclude": [
+              "PACK BRONZE",
+              "je vous recommande simplement de commencer",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "follow_up",
+              "strandsConversationState.previousIntent": "follow_up_or_deferral",
+              "strandsConversationState.currentIntent": "follow_up_or_deferral",
+              "strandsConversationState.currentPurchaseStage": "none",
+              "strandsConversationState.knownProspectInfo.medicalConcern": true,
+              "strandsConversationState.knownProspectInfo.deliveryLocation": "Abidjan",
+              "strandsConversationState.recentTurnCount": 12
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "cotedivoire-info-then-availability-question-captured-as-delivery",
+    "description": "Scenario derive de +22540619500_results.csv (session bdcd8b44, prospect en Cote d'Ivoire): demande d'info ('Puis-je en savoir plus ?'), puis pose une QUESTION de disponibilite ('Vous etes en cote d'Ivoire ?'). Le prospect demande si l'ENTREPRISE est presente / livre en Cote d'Ivoire, il ne declare PAS son adresse de livraison. Verifie: (1) le premier tour reste une demande d'information et l'agent presente Miira-Cell sans claims medicaux; (2) la question est classee delivery_or_availability_question mais deliveryLocation DOIT rester null et purchaseStage 'none' (REGRESSION observee en prod: le fallback deterministe a capture a tort 'Cote d'Ivoire' comme knownDeliveryLocation et a fait passer purchaseStage a delivery_pending alors que le prospect n'a donne aucune adresse -- meme classe de bug que deliveryLocation='procurer' dans le scenario Abidjan); (3) l'agent repond a la disponibilite AVANT de relancer la vente (nextBestAction answer_delivery_or_availability_before_sales_question): il confirme que l'entreprise livre en Cote d'Ivoire SANS re-presenter les packs ni renvoyer le media produit (mustNotRepeat product_presentation_pack_choice / ask_delivery_location / product_media), et SANS supposer une commande.",
+    "turns": [
+      {
+        "message": "Bonjour ! Puis-je en savoir plus à ce sujet ?ok.",
+        "expected": {
+          "classification": {
+            "primaryIntent": "information_request",
+            "secondaryIntents": [],
+            "purchaseStage": "information",
+            "quantity": null,
+            "deliveryLocation": null,
+            "paymentMode": null,
+            "objectionType": null,
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.75
+          },
+          "policy": {
+            "nextBestAction": "answer_information_then_resume_sales_flow",
+            "mustAnswer": [
+              "information"
+            ],
+            "mustNotRepeat": [],
+            "mustAvoid": [
+              "medical_claims"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.75
+          },
+          "response": {
+            "mustInclude": [
+              "Miira-Cell"
+            ],
+            "mustExclude": [
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ]
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "information",
+              "strandsConversationState.currentIntent": "information_request",
+              "strandsConversationState.currentPurchaseStage": "information",
+              "strandsConversationState.recentTurnCount": 0
+            }
+          }
+        }
+      },
+      {
+        "message": "Vous êtes en côte d'Ivoire ?",
+        "expected": {
+          "classification": {
+            "primaryIntent": "delivery_or_availability_question",
+            "secondaryIntents": [],
+            "purchaseStage": "none",
+            "quantity": null,
+            "deliveryLocation": null,
+            "paymentMode": null,
+            "objectionType": "availability",
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.84
+          },
+          "policy": {
+            "nextBestAction": "answer_delivery_or_availability_before_sales_question",
+            "mustAnswer": [
+              "delivery"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_delivery_location",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.84
+          },
+          "response": {
+            "mustInclude": [
+              "livraison"
+            ],
+            "mustExclude": [
+              "43 000",
+              "86 000",
+              "PACK STARTER",
+              "PACK BRONZE",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "information",
+              "strandsConversationState.previousIntent": "information_request",
+              "strandsConversationState.currentIntent": "delivery_or_availability_question",
+              "strandsConversationState.currentPurchaseStage": "none",
+              "strandsConversationState.knownProspectInfo.deliveryLocation": null,
+              "strandsConversationState.recentTurnCount": 2
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "gabon-libreville-info-availability-medical-trust-payment-mouila-deferral",
+    "description": "Scenario derive de results (2).csv (session 71f03fc2, prospect au Gabon, +24106740398): demande d'info, puis questions de localisation de l'ENTREPRISE ('dans quelle ville du Gabon', 'a Libreville dans quel quartier'), puis question medicale grave (polyneuropathie, tension, diabete), puis objection de confiance ('deja ete victime d'une pratique preoccupante... depense beaucoup d'argent sans etre livre'), puis paiement a la livraison, demande de photo, report (en province, sera a Libreville fin juin), adresse reelle (Mouila, Ngounie), puis temporisation finale. Verifie plusieurs regressions observees en prod sur cette session: (1) la question medicale recoit une reponse de securite SANS push de vente -- l'agent ne doit PAS recommander le PACK BRONZE ni 86 000 FCFA (en prod il a repondu 'je vous recommande simplement de commencer avec le PACK BRONZE de 2 boites a 86 000 FCFA'); (2) l'objection de confiance/peur d'arnaque ne doit PAS etre capturee comme adresse de livraison ni reproduite litteralement -- en prod l'agent a repondu 'Bien note a ete victime d une pratique preoccupante ou j'ai depense beaucoup d'argent sans e' et a pousse le paiement, alors qu'il fallait rassurer (objectionType trust_or_proof) sans push; (3) les questions 'ou est situee l'entreprise' ne doivent pas ecraser knownDeliveryLocation avec le texte de la question (meme classe de bug que deliveryLocation='procurer' / 'Cote d'Ivoire'); (4) medicalConcern reste sticky dans l'etat apres le tour medical mais ne re-route jamais les tours suivants (livraison, paiement, report) vers une relance medicale ou commerciale; (5) quand le prospect donne enfin une vraie ville (Mouila), l'agent ne doit pas rester bloque sur 'province' ('Bien note a province').",
+    "turns": [
+      {
+        "message": "Bonjour ! Puis-je en savoir plus à ce sujet ?",
+        "expected": {
+          "classification": {
+            "primaryIntent": "information_request",
+            "secondaryIntents": [],
+            "purchaseStage": "information",
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.75
+          },
+          "policy": {
+            "nextBestAction": "answer_information_then_resume_sales_flow",
+            "mustAnswer": [
+              "information"
+            ],
+            "mustNotRepeat": [],
+            "mustAvoid": [
+              "medical_claims"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.75
+          },
+          "response": {
+            "mustInclude": [
+              "Miira-Cell"
+            ],
+            "mustExclude": [
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ]
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "information",
+              "strandsConversationState.currentIntent": "information_request",
+              "strandsConversationState.currentPurchaseStage": "information",
+              "strandsConversationState.recentTurnCount": 0
+            }
+          }
+        }
+      },
+      {
+        "message": "Vous êtes situés dans quelle ville du Gabon",
+        "expected": {
+          "classification": {
+            "primaryIntent": "delivery_or_availability_question",
+            "secondaryIntents": [],
+            "purchaseStage": "none",
+            "deliveryLocation": ["Gabon", null],
+            "objectionType": "availability",
+            "medicalConcern": false,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.84
+          },
+          "policy": {
+            "nextBestAction": "answer_delivery_or_availability_before_sales_question",
+            "mustAnswer": [
+              "delivery"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_delivery_location",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.84
+          },
+          "response": {
+            "mustInclude": [
+              "Gabon"
+            ],
+            "mustExclude": [
+              "à quelle ville du Gabon",
+              "livraison à quelle ville du Gabon",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "information",
+              "strandsConversationState.previousIntent": "information_request",
+              "strandsConversationState.currentIntent": "delivery_or_availability_question",
+              "strandsConversationState.currentPurchaseStage": "none",
+              "strandsConversationState.recentTurnCount": 2
+            }
+          }
+        }
+      },
+      {
+        "message": "J'ai la polyneuropathie sensitivo motrice axonale longueur indépendante \nTension+ diabète \nQue me conseillez vous ?",
+        "expected": {
+          "classification": {
+            "primaryIntent": "health_condition_question",
+            "secondaryIntents": [],
+            "purchaseStage": "none",
+            "objectionType": "safety_or_medical",
+            "medicalConcern": true,
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.88
+          },
+          "policy": {
+            "nextBestAction": "give_medical_safety_response_without_sales_push",
+            "mustAnswer": [
+              "medical_safety"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_delivery_location",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims",
+              "sales_push"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.88
+          },
+          "response": {
+            "mustInclude": [
+              "ne remplace pas"
+            ],
+            "mustExclude": [
+              "PACK BRONZE",
+              "86 000",
+              "je vous recommande simplement de commencer",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "safety",
+              "strandsConversationState.previousIntent": "delivery_or_availability_question",
+              "strandsConversationState.currentIntent": "health_condition_question",
+              "strandsConversationState.currentPurchaseStage": "none",
+              "strandsConversationState.knownProspectInfo.medicalConcern": true,
+              "strandsConversationState.recentTurnCount": 4
+            }
+          }
+        }
+      },
+      {
+        "message": "A Libreville vous êtes situés dans quel quartier",
+        "expected": {
+          "classification": {
+            "primaryIntent": "delivery_or_availability_question",
+            "secondaryIntents": [],
+            "purchaseStage": "none",
+            "deliveryLocation": ["Libreville", null],
+            "objectionType": "availability",
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.84
+          },
+          "policy": {
+            "nextBestAction": "answer_delivery_or_availability_before_sales_question",
+            "mustAnswer": [
+              "delivery"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_delivery_location",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims",
+              "sales_push"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.84
+          },
+          "response": {
+            "mustExclude": [
+              "à Libreville vous êtes situés dans quel quartier",
+              "PACK BRONZE",
+              "86 000",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "safety",
+              "strandsConversationState.previousIntent": "health_condition_question",
+              "strandsConversationState.currentIntent": "delivery_or_availability_question",
+              "strandsConversationState.currentPurchaseStage": "none",
+              "strandsConversationState.knownProspectInfo.medicalConcern": true,
+              "strandsConversationState.recentTurnCount": 6
+            }
+          }
+        }
+      },
+      {
+        "message": "J ai déjà été victime d une pratique préoccupante ou j'ai dépensé beaucoup d'argent sans être livré.",
+        "expected": {
+          "classification": {
+            "primaryIntent": "follow_up_or_deferral",
+            "purchaseStage": "none",
+            "deliveryLocation": null,
+            "objectionType": ["trust_or_proof", "delay_or_follow_up"],
+            "conversationClosed": false,
+            "shouldNotifySales": false
+          },
+          "policy": {
+            "nextBestAction": "acknowledge_deferral_and_ask_one_blocker_only",
+            "mustAnswer": [
+              "follow_up"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_delivery_location",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims",
+              "sales_push"
+            ],
+            "tone": "short_whatsapp_friendly"
+          },
+          "response": {
+            "mustExclude": [
+              "Bien noté à été victime",
+              "à été victime d une pratique préoccupante",
+              "livraison: été victime",
+              "livraison à été victime",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "follow_up",
+              "strandsConversationState.previousIntent": "delivery_or_availability_question",
+              "strandsConversationState.currentIntent": "follow_up_or_deferral",
+              "strandsConversationState.currentPurchaseStage": "none",
+              "strandsConversationState.knownProspectInfo.medicalConcern": true,
+              "strandsConversationState.recentTurnCount": 8
+            }
+          }
+        }
+      },
+      {
+        "message": "A la livraison",
+        "expected": {
+          "classification": {
+            "primaryIntent": "payment_question",
+            "purchaseStage": "payment_pending",
+            "paymentMode": "cash_on_delivery",
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.8
+          },
+          "policy": {
+            "nextBestAction": "answer_payment_options_and_include_link_only_when_quantity_is_clear",
+            "mustAnswer": [
+              "payment"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_delivery_location",
+              "ask_payment_mode",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims",
+              "sales_push"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.8
+          },
+          "response": {
+            "mustInclude": [
+              "livraison"
+            ],
+            "mustExclude": [
+              "été victime",
+              "livraison: été victime",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "purchase",
+              "strandsConversationState.previousIntent": "follow_up_or_deferral",
+              "strandsConversationState.currentIntent": "payment_question",
+              "strandsConversationState.currentPurchaseStage": "payment_pending",
+              "strandsConversationState.knownProspectInfo.medicalConcern": true,
+              "strandsConversationState.recentTurnCount": 10
+            }
+          }
+        }
+      },
+      {
+        "message": "Je peux voir la photo de cette boîte",
+        "expected": {
+          "classification": {
+            "primaryIntent": "media_or_proof_request",
+            "purchaseStage": "none",
+            "conversationClosed": false,
+            "shouldNotifySales": false
+          },
+          "policy": {
+            "nextBestAction": "send_requested_media_or_proof_without_repeating_full_pitch",
+            "mustAnswer": [
+              "proof"
+            ],
+            "mustNotRepeat": [
+              "product_presentation_pack_choice",
+              "ask_delivery_location",
+              "ask_payment_mode",
+              "ask_quantity",
+              "whatsapp_group_link",
+              "product_media"
+            ],
+            "mustAvoid": [
+              "medical_claims",
+              "sales_push"
+            ],
+            "tone": "short_whatsapp_friendly"
+          },
+          "response": {
+            "mustExclude": [
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "information",
+              "strandsConversationState.previousIntent": "payment_question",
+              "strandsConversationState.currentIntent": "media_or_proof_request",
+              "strandsConversationState.currentPurchaseStage": "none",
+              "strandsConversationState.knownProspectInfo.medicalConcern": true,
+              "strandsConversationState.recentTurnCount": 12
+            }
+          }
+        }
+      },
+      {
+        "message": "Je suis en province \nJe serai à Libreville vers la fin du mois de juin pour certains contrôle",
+        "expected": {
+          "classification": {
+            "primaryIntent": "follow_up_or_deferral",
+            "purchaseStage": "none",
+            "objectionType": "delay_or_follow_up",
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.86
+          },
+          "policy": {
+            "nextBestAction": "acknowledge_deferral_and_ask_one_blocker_only",
+            "mustAnswer": [
+              "follow_up"
+            ],
+            "mustAvoid": [
+              "medical_claims",
+              "sales_push"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.86
+          },
+          "response": {
+            "mustExclude": [
+              "PACK BRONZE",
+              "86 000",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.conversationStage": "follow_up",
+              "strandsConversationState.previousIntent": "media_or_proof_request",
+              "strandsConversationState.currentIntent": "follow_up_or_deferral",
+              "strandsConversationState.currentPurchaseStage": "none",
+              "strandsConversationState.knownProspectInfo.medicalConcern": true,
+              "strandsConversationState.recentTurnCount": 14
+            }
+          }
+        }
+      },
+      {
+        "message": "A la livraison \nJe suis à Mouila province de la Ngounier",
+        "expected": {
+          "classification": {
+            "primaryIntent": "delivery_or_availability_question",
+            "deliveryLocation": ["mouila province de la ngounier", "Mouila province de la Ngounier", "Mouila", "Mouila, Ngounié"],
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.84
+          },
+          "policy": {
+            "nextBestAction": "answer_delivery_or_availability_before_sales_question",
+            "mustAnswer": [
+              "delivery"
+            ],
+            "mustAvoid": [
+              "medical_claims",
+              "sales_push"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.84
+          },
+          "response": {
+            "mustInclude": [
+              "livraison"
+            ],
+            "mustExclude": [
+              "Bien noté à province",
+              "livraison: province",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.currentIntent": "delivery_or_availability_question",
+              "strandsConversationState.knownProspectInfo.medicalConcern": true,
+              "strandsConversationState.recentTurnCount": 16
+            }
+          }
+        }
+      },
+      {
+        "message": "A la livraison \nJe peux être en possession du produit quand ?\nCe sont les comprimés ?",
+        "expected": {
+          "classification": {
+            "primaryIntent": "payment_question",
+            "purchaseStage": "payment_pending",
+            "paymentMode": "cash_on_delivery",
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.8
+          },
+          "policy": {
+            "nextBestAction": "answer_payment_options_and_include_link_only_when_quantity_is_clear",
+            "mustAnswer": [
+              "payment"
+            ],
+            "mustAvoid": [
+              "medical_claims",
+              "sales_push"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.8
+          },
+          "response": {
+            "mustExclude": [
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.previousIntent": "delivery_or_availability_question",
+              "strandsConversationState.currentIntent": "payment_question",
+              "strandsConversationState.currentPurchaseStage": "payment_pending",
+              "strandsConversationState.knownProspectInfo.medicalConcern": true,
+              "strandsConversationState.recentTurnCount": 18
+            }
+          }
+        }
+      },
+      {
+        "message": "Oui \nJ attends votre appel",
+        "expected": {
+          "classification": {
+            "primaryIntent": "follow_up_or_deferral",
+            "paymentMode": ["cash_on_delivery", null],
+            "conversationClosed": false,
+            "shouldNotifySales": false,
+            "confidence": 0.8
+          },
+          "policy": {
+            "nextBestAction": "acknowledge_deferral_and_ask_one_blocker_only",
+            "mustAnswer": [
+              "follow_up"
+            ],
+            "mustAvoid": [
+              "medical_claims",
+              "sales_push"
+            ],
+            "tone": "short_whatsapp_friendly",
+            "confidence": 0.8
+          },
+          "response": {
+            "mustExclude": [
+              "PACK BRONZE",
+              "86 000",
+              "guerit",
+              "guerison totale",
+              "soigne definitivement"
+            ],
+            "maxRepeatedSentencesFromPreviousAssistant": 1
+          },
+          "sessionVariables": {
+            "jsonContains": {
+              "strandsConversationState.previousIntent": "payment_question",
+              "strandsConversationState.currentIntent": "follow_up_or_deferral",
+              "strandsConversationState.knownProspectInfo.medicalConcern": true,
+              "strandsConversationState.recentTurnCount": 20
+            }
+          }
+        }
+      }
+    ]
+  }
+]

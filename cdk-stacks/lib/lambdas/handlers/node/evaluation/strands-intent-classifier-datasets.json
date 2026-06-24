@@ -1,0 +1,10 @@
+{
+  "evaluatedCases": {
+    "description": "Cas de tests deja evalues. Ce fichier est le dataset de regression principal.",
+    "file": "strands-intent-classifier-evaluated-cases.json"
+  },
+  "newCases": {
+    "description": "Nouveaux cas a tester avant de les integrer au dataset de regression principal.",
+    "file": "strands-intent-classifier-new-cases.json"
+  }
+}

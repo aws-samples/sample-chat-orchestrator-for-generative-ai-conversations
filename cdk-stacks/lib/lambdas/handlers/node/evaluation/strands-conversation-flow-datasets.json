@@ -1,0 +1,10 @@
+{
+  "evaluatedCases": {
+    "description": "Scenarios multi-tours deja evalues. Ce fichier est le dataset de regression principal pour la coherence conversationnelle.",
+    "file": "strands-conversation-flow-evaluated-cases.json"
+  },
+  "newCases": {
+    "description": "Nouveaux scenarios multi-tours a tester avant de les integrer au dataset de regression principal.",
+    "file": "strands-conversation-flow-new-cases.json"
+  }
+}

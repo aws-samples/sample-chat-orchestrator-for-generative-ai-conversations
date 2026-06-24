@@ -30,5 +30,5 @@ scratchpad.mjs
 /.npmignore
 /.gitignore
 /lib/lambdas/handlers/node/.eslintrc.json
-/lib/lambdas/handlers/node/evaluation/
+/lib/lambdas/handlers/node/evaluation/results/
 /test/fixtures/

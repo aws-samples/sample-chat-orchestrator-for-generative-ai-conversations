@@ -1,0 +1,1115 @@
+[
+  {
+    "id": "info-facebook-default",
+    "message": "Bonjour ! Puis-je en savoir plus à ce sujet ?",
+    "expected": {
+      "primaryIntent": "information_request",
+      "purchaseStage": "information",
+      "quantity": null,
+      "shouldNotifySales": false,
+      "medicalConcern": false
+    }
+  },
+  {
+    "id": "info-direct-miiracell",
+    "message": "Bonjour, je souhaite avoir plus d'informations sur Miiracell+.",
+    "expected": {
+      "primaryIntent": "information_request",
+      "purchaseStage": "information",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-dosage-normal-treatment-boxes",
+    "message": "Il faut combien de boîtes pour un traitement normal",
+    "expected": {
+      "primaryIntent": "dosage_usage_question",
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-health-total-healing-boxes",
+    "message": "Et il faut combien de boîtes pour une guérison totale???",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "secondaryIntents": [
+        "dosage_usage_question"
+      ],
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-health-ulcer-buruli",
+    "message": "Merci beaucoup, mais j'aimerais savoir si ce produits  guérit aussi l'ulcère de burili",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "price-cest-combien",
+    "message": "C’est combien ?",
+    "expected": {
+      "primaryIntent": "price_inquiry",
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "price-le-prix",
+    "message": "Le prix ?",
+    "expected": {
+      "primaryIntent": "price_inquiry",
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "price-combien",
+    "message": "Combien ??",
+    "expected": {
+      "primaryIntent": "price_inquiry",
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    },
+    "expectedNot": {
+      "objectionType": "price_high"
+    }
+  },
+  {
+    "id": "price-one-box-how-much",
+    "message": "Une boîte fait combien ??",
+    "expected": {
+      "primaryIntent": "price_inquiry",
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    },
+    "expectedNot": {
+      "secondaryIntents": [
+        "purchase_intent"
+      ]
+    }
+  },
+  {
+    "id": "price-budget",
+    "message": "Le budget",
+    "expected": {
+      "primaryIntent": "price_inquiry",
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "price-objection",
+    "message": "C’est cher vous pouvez diminuer ?",
+    "expected": {
+      "primaryIntent": "price_inquiry",
+      "purchaseStage": "none",
+      "objectionType": "price_high",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "purchase-ready",
+    "message": "Je veux commander",
+    "expected": {
+      "primaryIntent": "purchase_intent",
+      "purchaseStage": "ready_to_order",
+      "quantity": null,
+      "shouldNotifySales": true
+    }
+  },
+  {
+    "id": "purchase-one-digit",
+    "message": "1",
+    "expected": {
+      "primaryIntent": "purchase_intent",
+      "purchaseStage": "quantity_selected",
+      "quantity": 1,
+      "shouldNotifySales": true
+    }
+  },
+  {
+    "id": "purchase-one-box",
+    "message": "Avec une boîte mais à très bientôt",
+    "expected": {
+      "primaryIntent": "purchase_intent",
+      "purchaseStage": "quantity_selected",
+      "quantity": 1,
+      "shouldNotifySales": true
+    }
+  },
+  {
+    "id": "purchase-two-boxes",
+    "message": "Deux boîtes svp",
+    "expected": {
+      "primaryIntent": "purchase_intent",
+      "purchaseStage": "quantity_selected",
+      "quantity": 2,
+      "shouldNotifySales": true
+    }
+  },
+  {
+    "id": "dosage-sachets",
+    "message": "👆👆👆❓Combien de sachets par boîte ?❓❓",
+    "expected": {
+      "primaryIntent": "product_composition_question",
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "dosage-normal-treatment-boxes",
+    "message": "Il faut combien de boîtes pour un traitement normal",
+    "expected": {
+      "primaryIntent": "dosage_usage_question",
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "composition-ingredients",
+    "message": "Quel sont les 13 ingrédients qui compose le müracel ?",
+    "expected": {
+      "primaryIntent": "product_composition_question",
+      "purchaseStage": "none",
+      "objectionType": "composition",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "composition-and-dosage",
+    "message": "Parlez moi d'abord du produit, ingredients, posologie, etc.",
+    "expected": {
+      "primaryIntent": "product_composition_question",
+      "secondaryIntents": [
+        "dosage_usage_question"
+      ],
+      "purchaseStage": "none",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "health-what-heals",
+    "message": "Qu’est-ce que ça soigne ?",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "health-total-healing-boxes",
+    "message": "Et il faut combien de boîtes pour une guérison totale???",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "secondaryIntents": [
+        "dosage_usage_question"
+      ],
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "health-diabetic",
+    "message": "je suis diabétique je ne marche pas mon mal c est ma hanche et les plaîes qui ne finissent pas vite je suis en Côte d'Ivoire",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "health-renal",
+    "message": "Est qu'il est efficace pour le problème renal",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "delivery-location",
+    "message": "Abidjan Yopougon",
+    "expected": {
+      "primaryIntent": "delivery_or_availability_question",
+      "purchaseStage": "none",
+      "deliveryLocation": "Abidjan Yopougon",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "delivery-abidjan-cocody",
+    "message": "Sinon je suis à Abidjan Cocody",
+    "expected": {
+      "primaryIntent": "delivery_or_availability_question",
+      "purchaseStage": "none",
+      "deliveryLocation": "Abidjan Cocody",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "delivery-availability",
+    "message": "Ces produits peuvent être disponibles à Abidjan?",
+    "expected": {
+      "primaryIntent": "delivery_or_availability_question",
+      "purchaseStage": "none",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "delivery-where-located",
+    "message": "Bonjour où êtes vous situés ?",
+    "expected": {
+      "primaryIntent": "delivery_or_availability_question",
+      "purchaseStage": "none",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "payment-wave",
+    "message": "Je paie par Wave",
+    "expected": {
+      "primaryIntent": "payment_question",
+      "purchaseStage": "payment_pending",
+      "paymentMode": "wave",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "payment-cash-on-delivery",
+    "message": "Je peux payer à la livraison ?",
+    "expected": {
+      "primaryIntent": "payment_question",
+      "purchaseStage": "payment_pending",
+      "paymentMode": "cash_on_delivery",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "proof-facebook-link",
+    "message": "https://www.facebook.com/share/r/1G41CU5WUL/",
+    "expected": {
+      "primaryIntent": "unknown",
+      "purchaseStage": "none",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "deferral-ok",
+    "message": "Ok",
+    "expected": {
+      "primaryIntent": "follow_up_or_deferral",
+      "purchaseStage": "none",
+      "objectionType": "delay_or_follow_up",
+      "medicalConcern": false,
+      "shouldNotifySales": false
+    },
+    "expectedNot": {
+      "primaryIntent": "health_condition_question",
+      "objectionType": "safety_or_medical",
+      "secondaryIntents": [
+        "health_condition_question"
+      ]
+    }
+  },
+  {
+    "id": "deferral-not-now",
+    "message": "Pour le moment non",
+    "expected": {
+      "primaryIntent": "follow_up_or_deferral",
+      "purchaseStage": "none",
+      "objectionType": "delay_or_follow_up",
+      "medicalConcern": false,
+      "shouldNotifySales": false
+    },
+    "expectedNot": {
+      "primaryIntent": "health_condition_question",
+      "objectionType": "safety_or_medical",
+      "secondaryIntents": [
+        "health_condition_question"
+      ]
+    }
+  },
+  {
+    "id": "deferral-reviens",
+    "message": "Ok je vous reviens docteur",
+    "expected": {
+      "primaryIntent": "follow_up_or_deferral",
+      "purchaseStage": "none",
+      "objectionType": "delay_or_follow_up",
+      "medicalConcern": false,
+      "shouldNotifySales": false
+    },
+    "expectedNot": {
+      "primaryIntent": "health_condition_question",
+      "objectionType": "safety_or_medical",
+      "secondaryIntents": [
+        "health_condition_question"
+      ]
+    }
+  },
+  {
+    "id": "deferral-money",
+    "message": "Je cherche un peu d'argent avant de vous rappeler.",
+    "expected": {
+      "primaryIntent": "follow_up_or_deferral",
+      "purchaseStage": "none",
+      "objectionType": "delay_or_follow_up",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "deferral-thanks",
+    "message": "Ok merci",
+    "expected": {
+      "primaryIntent": "follow_up_or_deferral",
+      "purchaseStage": "none",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "info-question-reminder",
+    "message": "Mr répondez à mes questions svp",
+    "expected": {
+      "primaryIntent": "information_request",
+      "purchaseStage": "information",
+      "quantity": null,
+      "shouldNotifySales": false
+    },
+    "expectedNot": {
+      "objectionType": "unknown"
+    }
+  },
+  {
+    "id": "unknown-noise",
+    "message": "??? Ff",
+    "expected": {
+      "primaryIntent": "unknown",
+      "purchaseStage": "none",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "unknown-flags",
+    "message": "🇬🇳🇬🇳🇬🇳🇬🇳🇬🇳🇬🇳🇬🇳🇬🇳🇬🇳",
+    "expected": {
+      "primaryIntent": "unknown",
+      "purchaseStage": "none",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "deferral-no-with-context",
+    "message": "Non",
+    "conversation": [
+      {
+        "direction": "outbound",
+        "message": "Voulez-vous procéder à la commande maintenant?",
+        "sessionVariables": {
+          "useCaseId": "agent"
+        }
+      }
+    ],
+    "expected": {
+      "primaryIntent": "follow_up_or_deferral",
+      "purchaseStage": "none",
+      "objectionType": "delay_or_follow_up",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "confirmation-with-context",
+    "message": "Ok je confirme",
+    "conversation": [
+      {
+        "direction": "outbound",
+        "message": "Vous confirmez cette commande de 2 boîtes ?",
+        "sessionVariables": {
+          "useCaseId": "agent",
+          "knownBoxQuantity": "2"
+        }
+      }
+    ],
+    "sessionVariables": {
+      "knownBoxQuantity": "2"
+    },
+    "expected": {
+      "primaryIntent": "order_confirmation",
+      "purchaseStage": "order_confirmation",
+      "shouldNotifySales": true
+    }
+  },
+  {
+    "id": "new-info-clarification-cest-a-dire",
+    "message": "C'est-à-dire ?",
+    "expected": {
+      "primaryIntent": "information_request",
+      "purchaseStage": "information",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-health-pathology-and-cure",
+    "message": "Je crois avoir ciblé ce que je ne comprends bien en posant ma question.\nQue voulez-vous vous dire par ceci 👇🏾👇🏾👇🏾\n\n[Je viens de vous envoyer les visuels. Vous préférez commencer avec 1 boîte ou faire la cure avec 2 boîtes?]\n1 boîte pour soigner quelle pathologie ?\nEt c'est quoi la cure avec 2 boîtes ?",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "secondaryIntents": [
+        "dosage_usage_question",
+        "information_request"
+      ],
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-deferral-no-choice-ready-later",
+    "message": "Je n'ai fait aucun choix.\nJe vous ai juste dit que j'ai compris votre explication et vous ai remercié.\nMerci donc et je me propose de vous revenir dès que je serai prêt. Merci beaucoup.",
+    "expected": {
+      "primaryIntent": "follow_up_or_deferral",
+      "purchaseStage": "none",
+      "objectionType": "delay_or_follow_up",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-purchase-how-to-get-it",
+    "message": "Comment avoir ça ?",
+    "expected": {
+      "primaryIntent": "purchase_intent",
+      "purchaseStage": "ready_to_order",
+      "quantity": null,
+      "shouldNotifySales": true
+    }
+  },
+  {
+    "id": "new-delivery-contact-cote-ivoire",
+    "message": "Comment vous contacter je suis à côté d, ivoire",
+    "expected": {
+      "primaryIntent": "delivery_or_availability_question",
+      "secondaryIntents": [
+        "information_request"
+      ],
+      "purchaseStage": "none",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-health-doctors-say-not-healing",
+    "message": "Les Docteurs dises sa ne ce gueri pas.et vous?",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-proof-waiting-image",
+    "message": "J'attend l'image",
+    "expected": {
+      "primaryIntent": "proof_testimonial_request",
+      "purchaseStage": "none",
+      "objectionType": "trust_or_proof",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-health-diabetes-only",
+    "message": "Ça ne soigne que le diabète seulement svp ?",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-health-pack-what-heals-typo",
+    "message": "Oui ce pacte soigne quoi",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-health-price-location-miiracell-typo",
+    "message": "Bonjour ! Puis-je en savoir plus à ce sujet ?ce produit Miira_Cll+  coûte combien pour soigner et traiter le diabète, la tension etc... Je suis en Côte d'Ivoire",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "secondaryIntents": [
+        "price_inquiry",
+        "information_request",
+        "delivery_or_availability_question"
+      ],
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-deferral-present-someone",
+    "message": "Je vais présenter à quelqu'un, je vous reviens.",
+    "expected": {
+      "primaryIntent": "follow_up_or_deferral",
+      "purchaseStage": "none",
+      "objectionType": "delay_or_follow_up",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-deferral-means-after-testimonial",
+    "message": "Bonjour ! Puis-je en savoir plus à ce sujet ?je suis touché par le témoignage question de réunir les moyens et vous revenir",
+    "expected": {
+      "primaryIntent": "follow_up_or_deferral",
+      "secondaryIntents": [
+        "information_request",
+        "proof_testimonial_request"
+      ],
+      "purchaseStage": "none",
+      "objectionType": "delay_or_follow_up",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-price-sachet-and-delivery-location",
+    "message": "Bonjour Mr ou Mme\n1-Puis-je connaître le prix d'un sachet ?\n2- je suis en Côte d'Ivoire, où puis-je m'en procurer ?",
+    "expected": {
+      "primaryIntent": "price_inquiry",
+      "secondaryIntents": [
+        "delivery_or_availability_question"
+      ],
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-dosage-five-sachets",
+    "message": "Avec 5 sachets",
+    "expected": {
+      "primaryIntent": "dosage_usage_question",
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-purchase-five-boxes",
+    "message": "5 boîtes",
+    "expected": {
+      "primaryIntent": "purchase_intent",
+      "purchaseStage": "quantity_selected",
+      "quantity": 5,
+      "shouldNotifySales": true
+    }
+  },
+  {
+    "id": "new-confirm-five-boxes-context",
+    "message": "Oui je valide",
+    "conversation": [
+      {
+        "direction": "outbound",
+        "message": "Vous souhaitez valider la commande de 5 boîtes?",
+        "sessionVariables": {
+          "useCaseId": "agent",
+          "knownBoxQuantity": "5"
+        }
+      }
+    ],
+    "sessionVariables": {
+      "knownBoxQuantity": "5"
+    },
+    "expected": {
+      "primaryIntent": "order_confirmation",
+      "purchaseStage": "order_confirmation",
+      "shouldNotifySales": true
+    }
+  },
+  {
+    "id": "new-price-calculation-question",
+    "message": "Mais je ne comprends pas le calcul\nVous avez dit\n1 sachet= 1791 FCFA\n1791 f × 5= 8955 f CFA\nN'est-ce pas ?",
+    "expected": {
+      "primaryIntent": "price_inquiry",
+      "purchaseStage": "payment_pending",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-health-glycemia-box-count",
+    "message": "Pour une glycémie élevé il faut combien de boîte",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "secondaryIntents": [
+        "dosage_usage_question"
+      ],
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-dosage-box-duration-weeks",
+    "message": "Une boîte fait combien de semaines",
+    "expected": {
+      "primaryIntent": "dosage_usage_question",
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-price-miracelle-typo",
+    "message": "Le prix du miracelle",
+    "expected": {
+      "primaryIntent": "price_inquiry",
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-price-box-cost-statement",
+    "message": "C'est une boîte qui fait 43000",
+    "expected": {
+      "primaryIntent": "price_inquiry",
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-composition-total-sachets-typo-space",
+    "message": "Sa fait 48 saché",
+    "expected": {
+      "primaryIntent": "product_composition_question",
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-composition-total-sachets-typo-nospace",
+    "message": "Sa fait 48saché",
+    "expected": {
+      "primaryIntent": "product_composition_question",
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-health-can-heal-my-diabetes-typo",
+    "message": "Je demande si sa peut guérir mon diabète",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-health-stop-insulin-finish-diabetes",
+    "message": "Quand tu fais le traitement tu arrêtes l'insuline. Esque le pack bronze peux Finir le diabète",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "secondaryIntents": [
+        "dosage_usage_question"
+      ],
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-price-product-info-combined",
+    "message": "Bonjour quel est le produit et c'est combien ?",
+    "expected": {
+      "primaryIntent": "price_inquiry",
+      "secondaryIntents": [
+        "information_request"
+      ],
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-info-product-typo-puisse-savoir",
+    "message": "Bonjour puisse savoir sur votre produit ?",
+    "expected": {
+      "primaryIntent": "information_request",
+      "purchaseStage": "information",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-deferral-ahok-thanks",
+    "message": "Ahok merci",
+    "expected": {
+      "primaryIntent": "follow_up_or_deferral",
+      "purchaseStage": "none",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-price-treatment-religious-prefix",
+    "message": "Que Dieu soit loué.le traitement coûte combien ?",
+    "expected": {
+      "primaryIntent": "price_inquiry",
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-conversation-closing-a-bientot",
+    "message": "A bientôt !",
+    "expected": {
+      "primaryIntent": "conversation_closing",
+      "purchaseStage": "none",
+      "conversationClosed": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-deferral-thanks-punctuation",
+    "message": "Merci.",
+    "expected": {
+      "primaryIntent": "follow_up_or_deferral",
+      "purchaseStage": "none",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-health-price-diabetes",
+    "message": "Bonjour, c'est combien pour le diabète svp",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "secondaryIntents": [
+        "price_inquiry"
+      ],
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-price-info-availability-miracell",
+    "message": "Bonjour ! Puis-je en savoir plus à ce sujet ?À combien coûte ce mira-cell et où pouvons nous l'avoir ?",
+    "expected": {
+      "primaryIntent": "price_inquiry",
+      "secondaryIntents": [
+        "information_request",
+        "delivery_or_availability_question"
+      ],
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-deferral-looking-for-money",
+    "message": "Ok merci je vous reviendrai bientôt. Je vais chercher l'argent.",
+    "expected": {
+      "primaryIntent": "follow_up_or_deferral",
+      "purchaseStage": "none",
+      "objectionType": "delay_or_follow_up",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-health-weight-loss-gabon",
+    "message": "Bonjour je suis au Gabon\nJ' aimerais perdre 25kg\nPas de maladie particulière juste le poids qui me dérange 110kg",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "secondaryIntents": [
+        "delivery_or_availability_question"
+      ],
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-health-how-to-lose-25kg",
+    "message": "Comment faire pour perdre 25kg",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-info-answer-my-message-stop-repetition",
+    "message": "Répondez à mon message arrêtez de m'envoyer les mêmes messages",
+    "expected": {
+      "primaryIntent": "information_request",
+      "purchaseStage": "information",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-delivery-presence-gabon-question",
+    "message": "Vous n'êtes pas encore présent au Gabon ??",
+    "expected": {
+      "primaryIntent": "delivery_or_availability_question",
+      "purchaseStage": "none",
+      "deliveryLocation": "Gabon",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-info-not-answering-my-question",
+    "message": "Vous ne répondez pas à ma question",
+    "expected": {
+      "primaryIntent": "information_request",
+      "purchaseStage": "information",
+      "quantity": null,
+      "shouldNotifySales": false
+    },
+    "expectedNot": {
+      "objectionType": "unknown"
+    }
+  },
+  {
+    "id": "new-delivery-location-gabon-only",
+    "message": "Moi je suis au Gabon",
+    "expected": {
+      "primaryIntent": "delivery_or_availability_question",
+      "purchaseStage": "none",
+      "deliveryLocation": "Gabon",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-delivery-representative-gabon",
+    "message": "Avez-vous des représentant au Gabon",
+    "expected": {
+      "primaryIntent": "delivery_or_availability_question",
+      "purchaseStage": "none",
+      "deliveryLocation": "Gabon",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-dosage-how-many-needed-typo",
+    "message": "Il en faut combien pr un vraiment",
+    "expected": {
+      "primaryIntent": "dosage_usage_question",
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-deferral-according-to-my-means",
+    "message": "Je verrai selon mes moyens",
+    "expected": {
+      "primaryIntent": "follow_up_or_deferral",
+      "purchaseStage": "none",
+      "objectionType": "delay_or_follow_up",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-health-one-box-not-solving-problem",
+    "message": "Donc une boite ne regle pas le problème",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "secondaryIntents": [
+        "dosage_usage_question"
+      ],
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-health-two-boxes-diabetes-solving-question",
+    "message": "Erceque avec 2 boites je règle mon problème de diabète",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "secondaryIntents": [
+        "dosage_usage_question"
+      ],
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-dosage-effect-after-how-long",
+    "message": "Effet après combien de temps",
+    "expected": {
+      "primaryIntent": "dosage_usage_question",
+      "purchaseStage": "none",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-purchase-prefer-one-box-start",
+    "message": "Je préfère d abord une boîte pour commencer",
+    "expected": {
+      "primaryIntent": "purchase_intent",
+      "purchaseStage": "quantity_selected",
+      "quantity": 1,
+      "shouldNotifySales": true
+    }
+  },
+  {
+    "id": "new-purchase-interested-treatment-facebook-video",
+    "message": "Bonjour ! Puis-je en savoir plus à ce sujet ? Bonsoir Mr j'ai vue vôtre vidéo sur Facebook et je suis intéressé par le traitement svp bien vouloir me répondre",
+    "expected": {
+      "primaryIntent": "purchase_intent",
+      "secondaryIntents": [
+        "information_request",
+        "proof_testimonial_request"
+      ],
+      "purchaseStage": "ready_to_order",
+      "quantity": null,
+      "shouldNotifySales": true
+    }
+  },
+  {
+    "id": "new-deferral-call-tomorrow",
+    "message": "J veux vous appeler demain",
+    "expected": {
+      "primaryIntent": "follow_up_or_deferral",
+      "purchaseStage": "none",
+      "objectionType": "delay_or_follow_up",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-deferral-ok-understood",
+    "message": "OK j'ai compris",
+    "expected": {
+      "primaryIntent": "follow_up_or_deferral",
+      "purchaseStage": "none",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-purchase-possession-gabon",
+    "message": "Bonjour je vous écris  du Gabon comment faire pour entrer en possession ?",
+    "expected": {
+      "primaryIntent": "purchase_intent",
+      "secondaryIntents": [
+        "delivery_or_availability_question"
+      ],
+      "purchaseStage": "ready_to_order",
+      "deliveryLocation": "Gabon",
+      "quantity": null,
+      "shouldNotifySales": true
+    }
+  },
+  {
+    "id": "new-delivery-gabon-how-to-proceed",
+    "message": "Je suis au Gabon comment faire ??",
+    "expected": {
+      "primaryIntent": "delivery_or_availability_question",
+      "secondaryIntents": [
+        "purchase_intent"
+      ],
+      "purchaseStage": "none",
+      "deliveryLocation": "Gabon",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-health-preventive-age-medication",
+    "message": "Bonjour, vraiment.votre histoire est passionnante. J'aimerai savoir si on peut prendre ce médicament à titre préventif lorsqu'on a atteint un certain âge?",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "secondaryIntents": [
+        "dosage_usage_question"
+      ],
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-deferral-will-decide-later",
+    "message": "Pour l'instant, j'ai une idée. J'aviserai le moment venu, merci.",
+    "expected": {
+      "primaryIntent": "follow_up_or_deferral",
+      "purchaseStage": "none",
+      "objectionType": "delay_or_follow_up",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-health-diabetes-pancreas-how-to-get",
+    "message": "Bonjour comment avoir ce produit svp je souffre du diabète mon  pencrea est vraiment touché",
+    "expected": {
+      "primaryIntent": "health_condition_question",
+      "secondaryIntents": [
+        "purchase_intent"
+      ],
+      "purchaseStage": "none",
+      "medicalConcern": true,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-delivery-libreville-gabon",
+    "message": "Je suis a Libreville au gabon",
+    "expected": {
+      "primaryIntent": "delivery_or_availability_question",
+      "purchaseStage": "none",
+      "deliveryLocation": "Libreville au Gabon",
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-info-how-to-proceed",
+    "message": "Bonjour ! Puis-je en savoir plus à ce sujet ?bjr comment faire",
+    "expected": {
+      "primaryIntent": "information_request",
+      "secondaryIntents": [
+        "purchase_intent"
+      ],
+      "purchaseStage": "information",
+      "quantity": null,
+      "shouldNotifySales": false
+    }
+  },
+  {
+    "id": "new-delivery-where-to-find-it",
+    "message": "Où le trouver ?",
+    "expected": {
+      "primaryIntent": "delivery_or_availability_question",
+      "purchaseStage": "none",
+      "shouldNotifySales": false
+    }
+  }
+]
