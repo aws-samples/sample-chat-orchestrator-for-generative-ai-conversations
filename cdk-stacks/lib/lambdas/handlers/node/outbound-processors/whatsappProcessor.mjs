@@ -1,4 +1,18 @@
 const WhatsAppService = require('../services/WhatsAppService.mjs');
+const WhatsAppInteractive = require('../services/whatsappInteractive.mjs');
+
+// Render a text response as interactive buttons / CTA URL when it carries a closed choice,
+// otherwise fall back to a plain text message.
+const sendOutboundText = async (destinationAddress, outboundMessage) => {
+    const interactive = WhatsAppInteractive.buildInteractiveMessage(outboundMessage)
+    if (interactive?.kind === 'buttons') {
+        return WhatsAppService.sendWhatsAppInteractiveButtons(destinationAddress, interactive.bodyText, interactive.buttons)
+    }
+    if (interactive?.kind === 'cta_url') {
+        return WhatsAppService.sendWhatsAppCtaUrl(destinationAddress, interactive.bodyText, interactive.displayText, interactive.url)
+    }
+    return WhatsAppService.sendWhatsAppMessage(destinationAddress, outboundMessage)
+}
 
 exports.handler = async (event, context, callback) => {
     try {
@@ -12,7 +26,7 @@ exports.handler = async (event, context, callback) => {
                 if(event.imageId){
                     whatsAppResponse = await WhatsAppService.sendWhatsAppImage(recipient.destinationAddress, event.imageId, event.outboundMessage);
                 } else {
-                    whatsAppResponse = await WhatsAppService.sendWhatsAppMessage(recipient.destinationAddress, event.outboundMessage);
+                    whatsAppResponse = await sendOutboundText(recipient.destinationAddress, event.outboundMessage);
                 }
                 break;
             case 'process':
@@ -20,7 +34,7 @@ exports.handler = async (event, context, callback) => {
                 if(event.imageId){
                     whatsAppResponse = await WhatsAppService.sendWhatsAppImage(recipient.destinationAddress, event.imageId, event.outboundMessage);
                 } else {
-                    whatsAppResponse = await WhatsAppService.sendWhatsAppMessage(recipient.destinationAddress, event.outboundMessage);
+                    whatsAppResponse = await sendOutboundText(recipient.destinationAddress, event.outboundMessage);
                 }
                 break;
             case 'template':

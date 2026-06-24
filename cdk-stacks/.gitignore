@@ -26,3 +26,9 @@ cdk.context.json
 build
 
 scratchpad.mjs
+/lib/lambdas/handlers/node/chatOrchestrator - Copie.mjs
+/.npmignore
+/.gitignore
+/lib/lambdas/handlers/node/.eslintrc.json
+/lib/lambdas/handlers/node/evaluation/
+/test/fixtures/

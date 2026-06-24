@@ -3,27 +3,26 @@ const LambdaService = require('../services/LambdaService.mjs');
 exports.handler = async (event, context, callback) => {
 
     try {
-        console.info("App Version:", process.env.APPLICATION_VERSION)
-        console.trace(`Event: `, JSON.stringify(event,null,2));
+        console.info('App Version: ', process.env.APPLICATION_VERSION)
+        console.trace('Event: ', JSON.stringify(event,null,2));
 
-        let recipients = []
         for (const record of event.Records) {
-            console.trace(`Record: `, record);
-            let recipient = JSON.parse(record.Sns.Message)
-            console.trace(`Message: `, recipient);
 
-            recipient.action = 'process'
-            recipient.replyExpected = true
-            recipient.channel = 'sms'
-            recipient.destinationAddress = recipient.originationNumber
+            console.trace('Record: ', JSON.stringify(record,null,2));
 
-            console.trace(`Recipient: `, recipient);
-            recipients.push(recipient)
+            let inboundMessage = JSON.parse(record.Sns.Message)
+            inboundMessage.action = 'process'
+            inboundMessage.replyExpected = true
+            inboundMessage.channel = 'sms'
+            inboundMessage.destinationAddress = inboundMessage.originationNumber
+
+            console.trace('Inbound Message: ', JSON.stringify(inboundMessage,null,2));
+            
+            //Execute the Chat Orchestrator Lambda
+            const response = await LambdaService.invoke(process.env.CHAT_ORCHESTRATOR_LAMBDA_NAME, { inboundMessage: inboundMessage })
+            console.trace('Response: ', JSON.stringify(response,null,2))
+
         }
-
-        //Execute the Chat Orchestrator Lambda
-        const result = await LambdaService.invoke(process.env.CHAT_ORCHESTRATOR_LAMBDA_NAME, { recipients })
-        console.trace('result', result)
 
         callback(null, 'Success')
     }
