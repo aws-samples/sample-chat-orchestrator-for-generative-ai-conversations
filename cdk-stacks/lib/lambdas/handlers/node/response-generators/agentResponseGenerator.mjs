@@ -84,6 +84,7 @@ const PORT_GENTIL_PAYMENT_DELIVERY_RESPONSE = "Pour Port-Gentil au Gabon, la com
 const GABON_DELIVERY_FOLLOW_UP_RESPONSE = "Pour répondre précisément: oui, c'est possible au Gabon, notamment pour Libreville. La commande se fait ici et l'équipe organise la livraison."
 const GABON_DELIVERY_REPEAT_RESPONSE = "Je confirme pour Libreville: le produit peut être obtenu via cette conversation, puis la livraison est coordonnée au Gabon."
 const AI_SUSPICION_GABON_RESPONSE = "Je comprends votre remarque. Oui, nous avons une représentation au Gabon et nous pouvons vous orienter pour Libreville. Vous parlez avec l'équipe Miira-Cell+."
+const GABON_NUMBER_LOCATION_RESPONSE = "Confirmez votre commande ici et nous organisons la livraison en vous mettant en relation avec notre représentante au Gabon"
 const AI_SUSPICION_RESPONSE = "Je comprends votre question. Vous parlez avec l'equipe Miira-Cell+; je suis la pour repondre clairement a vos questions sur le produit."
 const PROOF_SAFETY_RESPONSE = "Je comprends votre prudence. Je préfère rester transparent: je ne vais pas inventer de brevet ni affirmer une certification ici. Miira-Cell+ est un complément alimentaire; pour votre sécurité, demandez aussi l'avis medical de votre medecin."
 const PROOF_SAFETY_FOLLOW_UP_RESPONSE = "Vous avez raison d'être prudent. Ne vous fiez pas seulement à mes propos: demandez l'avis medical de votre medecin et basez-vous sur les informations vérifiables disponibles avant de décider."
@@ -1462,6 +1463,13 @@ const hasBusinessLocationQuestion = (message = '') => {
     /\b(?:vous|votre|etes|sommes|envoyer|passer|venir|aller|fils|fille|quelquun|quelqu un)\b/.test(value)
 }
 
+const GABON_COUNTRY_CODE = '241'
+
+const isGabonPhoneNumber = (phoneNumber = '') => {
+  const digits = String(phoneNumber || '').replace(/\D/g, '').replace(/^0+/, '')
+  return digits.startsWith(GABON_COUNTRY_CODE)
+}
+
 const buildQuantitySelectedResponse = (knownProspectInfo = {}, conversationState = {}) => {
   const quantity = knownProspectInfo.knownBoxQuantity || conversationState.knownProspectInfo?.quantity
   const location = knownProspectInfo.knownDeliveryLocation || conversationState.knownProspectInfo?.deliveryLocation
@@ -2361,6 +2369,11 @@ exports.handler = async (event, context, callback) => {
     if (responsePolicyMustAnswer(responsePolicy, 'payment')) {
       const response = buildPaymentDetailsResponse(recipient.messageBody, knownProspectInfo, conversationState)
       callback(null, {'llmSessionId': sessionId, 'response': response, 'source': 'Deterministic Rule', 'sessionVariables': finalizeSessionVariablesAfterResponse(responseSessionVariables, currentObjections, response)})
+      return
+    }
+
+    if (isGabonPhoneNumber(recipient.destinationAddress) && hasBusinessLocationQuestion(recipient.messageBody)) {
+      callback(null, {'llmSessionId': sessionId, 'response': GABON_NUMBER_LOCATION_RESPONSE, 'source': 'Deterministic Rule', 'sessionVariables': finalizeSessionVariablesAfterResponse(responseSessionVariables, currentObjections, GABON_NUMBER_LOCATION_RESPONSE)})
       return
     }
 
