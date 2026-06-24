@@ -913,8 +913,17 @@ const detectPaymentMode = (message = '') => {
 
 const asksForDeliveryLocation = (message = '') => {
   const value = normalizeResponseForComparison(message)
-  return /\b(?:ville|commune|quartier|lieu|adresse|ou souhaitez vous etre livre|ou voulez vous etre livre|livraison|livrer|livre)\b/.test(value) &&
-    /\b(?:livraison|livrer|livre|ville|commune|quartier|adresse|lieu)\b/.test(value)
+  // Un message de confirmation de commande ("Commande confirmee ... livraison: X.
+  // Paiement a la livraison ...") mentionne "livraison/livrer" sans demander d'adresse:
+  // il ne doit jamais etre interprete comme une demande de lieu de livraison.
+  if (/\bcommande confirmee\b/.test(value)) return false
+  return /\blieu de livraison\b/.test(value) ||
+    /\badresse(?: de(?: la)? livraison)?\b/.test(value) ||
+    /\bdans quelle (?:ville|commune)\b/.test(value) ||
+    /\bquel quartier\b/.test(value) ||
+    /\bou (?:souhaitez|voulez|desirez)[- ]vous etre livre/.test(value) ||
+    /\bou (?:etre|vous faire) livre/.test(value) ||
+    (/[?]/.test(message) && /\b(?:ville|commune|quartier|adresse|lieu|livr)/.test(value))
 }
 
 const isInvalidDeliveryLocationCandidate = (value = '') => {
@@ -923,7 +932,17 @@ const isInvalidDeliveryLocationCandidate = (value = '') => {
     /\b\d{2,5}\s*k\b/.test(normalizedValue) ||
     /\b\d[\d\s.,]*(?:fcfa|f\s*cfa|xof)\b/.test(normalizedValue) ||
     /\b(?:ma|mon|mes|la|le|les|vos|votre)\s+(?:question|message|propos|produits?|efficacite|innocuite|vie)\b/.test(normalizedValue) ||
-    /\b(?:question|message|propos|efficacite|innocuite|produits?|certification|brevet|traitement|traiter|efficacement|boites?|paquets?|packs?|sachets?|poudre|sujet|temps|combien|prix|cout|tarif|montant|myomes?|fibromes?|ulceres?|buruli|cet effet|livraison certainement|a la livraison|reduction|vente|commande|commander|achete|acheter|prendre|confirme|confirmer|valide|valider|bientot|incessamment|interesse|interessee|reveni?r|reviendrai)\b/.test(normalizedValue)
+    /\b(?:question|message|propos|efficacite|innocuite|produits?|certification|brevet|traitement|traiter|efficacement|boites?|paquets?|packs?|sachets?|poudre|sujet|temps|combien|prix|cout|tarif|montant|myomes?|fibromes?|ulceres?|buruli|cet effet|livraison certainement|a la livraison|reduction|vente|commande|commander|achete|acheter|prendre|confirme|confirmer|valide|valider|bientot|incessamment|interesse|interessee|reveni?r|reviendrai|compris|entendu|recu|note|parfait|super)\b/.test(normalizedValue)
+}
+
+// Le lieu de livraison validé dans l'état conversationnel fait foi. Un knownDeliveryLocation
+// de session pollué (ex. accusé de réception "Compris." capté à tort comme adresse) ne doit
+// jamais écraser une adresse déjà validée au moment de construire la réponse.
+const resolveKnownDeliveryLocation = (knownProspectInfo = {}, conversationState = {}) => {
+  const sessionLocation = knownProspectInfo.knownDeliveryLocation
+  const validatedLocation = conversationState.knownProspectInfo?.deliveryLocation
+  if (sessionLocation && isInvalidDeliveryLocationCandidate(sessionLocation)) return validatedLocation || null
+  return sessionLocation || validatedLocation || null
 }
 
 const extractDeliveryLocation = (message = '', previousOutboundMessage = '') => {
@@ -952,7 +971,7 @@ const extractDeliveryLocation = (message = '', previousOutboundMessage = '') => 
   if (asksForDeliveryLocation(previousOutboundMessage) &&
     !/[?]/.test(rawMessage) &&
     rawMessage.length <= 80 &&
-    !/\b(?:oui|non|ok|okay|daccord|d accord|commande|commander|achete|acheter|prendre|confirmer|confirme|valider|valide|bonjour|bonsoir|merci|combien|prix|cher|boites?|sachets?|mobile money|wave|orange money|moov|mtn|visa)\b/.test(normalizedMessage)) {
+    !/\b(?:oui|non|ok|okay|daccord|d accord|compris|entendu|recu|note|parfait|super|commande|commander|achete|acheter|prendre|confirmer|confirme|valider|valide|bonjour|bonsoir|merci|combien|prix|cher|boites?|sachets?|mobile money|wave|orange money|moov|mtn|visa)\b/.test(normalizedMessage)) {
     return rawMessage.replace(/[.!?]+$/, '').trim()
   }
 
@@ -1094,8 +1113,13 @@ const deriveKnownProspectInfo = (sessionVariables = {}, conversation = [], curre
       if (parsed.phone) knownInfo.knownContactPhone = parsed.phone
       if (parsed.name) knownInfo.knownContactName = parsed.name
     } else {
-      const deliveryLocation = extractDeliveryLocation(message, previousOutboundMessage)
-      if (deliveryLocation) knownInfo.knownDeliveryLocation = deliveryLocation
+      // Une fois la commande confirmee, ne plus (re)capturer de lieu de livraison: un simple
+      // accuse de reception ("Compris.", "Entendu") ne doit pas devenir une adresse et ecraser
+      // le lieu deja valide. La capture tardive d'adresse passe par le chemin structure ci-dessus.
+      if (knownInfo.prospectConfirmedOrder !== 'true') {
+        const deliveryLocation = extractDeliveryLocation(message, previousOutboundMessage)
+        if (deliveryLocation) knownInfo.knownDeliveryLocation = deliveryLocation
+      }
 
       // Les coordonnees ne sont captees que si un e-mail est present (signal fort et non ambigu),
       // ce qui evite de confondre une adresse de livraison + contact avec des coordonnees.
@@ -1472,7 +1496,7 @@ const isGabonPhoneNumber = (phoneNumber = '') => {
 
 const buildQuantitySelectedResponse = (knownProspectInfo = {}, conversationState = {}) => {
   const quantity = knownProspectInfo.knownBoxQuantity || conversationState.knownProspectInfo?.quantity
-  const location = knownProspectInfo.knownDeliveryLocation || conversationState.knownProspectInfo?.deliveryLocation
+  const location = resolveKnownDeliveryLocation(knownProspectInfo, conversationState)
   const orderValidationAsked = knownProspectInfo.orderValidationAsked === 'true'
 
   if (quantity && location && orderValidationAsked) {
@@ -1490,7 +1514,7 @@ const buildQuantitySelectedResponse = (knownProspectInfo = {}, conversationState
 
 const buildOrderConfirmationResponse = (knownProspectInfo = {}, conversationState = {}) => {
   const quantity = knownProspectInfo.knownBoxQuantity || conversationState.knownProspectInfo?.quantity
-  const location = knownProspectInfo.knownDeliveryLocation || conversationState.knownProspectInfo?.deliveryLocation
+  const location = resolveKnownDeliveryLocation(knownProspectInfo, conversationState)
   const paymentMode = knownProspectInfo.knownPaymentMode || conversationState.knownProspectInfo?.paymentMode
   const price = Number(quantity) === 2
     ? '86 000 FCFA'
@@ -1521,7 +1545,7 @@ const buildOrderConfirmationResponse = (knownProspectInfo = {}, conversationStat
 
 const buildOrderRecapResponse = (knownProspectInfo = {}, conversationState = {}) => {
   const quantity = knownProspectInfo.knownBoxQuantity || conversationState.knownProspectInfo?.quantity
-  const location = knownProspectInfo.knownDeliveryLocation || conversationState.knownProspectInfo?.deliveryLocation
+  const location = resolveKnownDeliveryLocation(knownProspectInfo, conversationState)
   const paymentMode = knownProspectInfo.knownPaymentMode || conversationState.knownProspectInfo?.paymentMode
   const price = Number(quantity) === 2
     ? '86 000 FCFA'
@@ -1549,7 +1573,7 @@ const buildContactAndDeliveryRequest = (knownProspectInfo = {}, conversationStat
   const paymentLabel = (paymentMode === 'paiement a la livraison' || paymentMode === 'cash_on_delivery')
     ? 'à la livraison'
     : paymentMode ? 'par Mobile Money' : null
-  const location = knownProspectInfo.knownDeliveryLocation || conversationState.knownProspectInfo?.deliveryLocation
+  const location = resolveKnownDeliveryLocation(knownProspectInfo, conversationState)
   const missing = [
     location ? null : 'votre lieu de livraison',
     knownProspectInfo.knownContactName ? null : 'votre nom et prénom',
@@ -1565,7 +1589,7 @@ const buildContactAndDeliveryRequest = (knownProspectInfo = {}, conversationStat
 const buildPaymentDetailsResponse = (message = '', knownProspectInfo = {}, conversationState = {}) => {
   const paymentMode = detectPaymentMode(message) || knownProspectInfo.knownPaymentMode || conversationState.knownProspectInfo?.paymentMode
   const quantity = knownProspectInfo.knownBoxQuantity || conversationState.knownProspectInfo?.quantity
-  const location = knownProspectInfo.knownDeliveryLocation || conversationState.knownProspectInfo?.deliveryLocation
+  const location = resolveKnownDeliveryLocation(knownProspectInfo, conversationState)
   const knownDetails = [
     quantity ? `${quantity} boîte${Number(quantity) > 1 ? 's' : ''}` : null,
     location ? `livraison: ${location}` : null
@@ -2157,7 +2181,7 @@ exports.handler = async (event, context, callback) => {
       isTrueSessionFlag(responseSessionVariables.prospectConfirmedOrder) ||
       responsePolicy.nextBestAction === 'confirm_order_and_collect_missing_payment_or_delivery_detail'
     const paymentModeKnown = Boolean(knownProspectInfo.knownPaymentMode || conversationState.knownProspectInfo?.paymentMode)
-    const deliveryLocationKnown = Boolean(knownProspectInfo.knownDeliveryLocation || conversationState.knownProspectInfo?.deliveryLocation)
+    const deliveryLocationKnown = Boolean(resolveKnownDeliveryLocation(knownProspectInfo, conversationState))
     if (orderConfirmedContext && !medicalSafetyContext) {
       // 1) Pas encore de mode de paiement: proposer le choix du paiement.
       if (!paymentModeKnown) {
@@ -2167,9 +2191,12 @@ exports.handler = async (event, context, callback) => {
       }
       // 3) Lieu de livraison ET coordonnees connus: recapitulatif (ou finalisation si le prospect confirme le recap).
       if (deliveryLocationKnown && hasCompleteContactDetails(knownProspectInfo)) {
-        // Le prospect a tape "Confirmer" sur le recapitulatif: on finalise (paiement)
-        // au lieu de reafficher le meme recapitulatif en boucle.
-        if (hasOrderRecapConfirmationSignal(recipient.messageBody)) {
+        // Le prospect a tape "Confirmer" sur le recapitulatif, OU la commande est deja
+        // cloturee/finalisee: on envoie la confirmation de cloture au lieu de reafficher
+        // le meme recapitulatif en boucle (et de redemander "Confirmez-vous ?").
+        if (hasOrderRecapConfirmationSignal(recipient.messageBody) ||
+          conversationState.currentPurchaseStage === 'completed' ||
+          conversationState.conversationStage === 'closed') {
           const response = buildOrderConfirmationResponse(knownProspectInfo, conversationState)
           callback(null, {'llmSessionId': sessionId, 'response': response, 'source': 'Deterministic Rule', 'sessionVariables': finalizeSessionVariablesAfterResponse(responseSessionVariables, currentObjections, response)})
           return
