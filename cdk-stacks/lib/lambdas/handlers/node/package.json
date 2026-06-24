@@ -6,7 +6,14 @@
   "directories": {
     "lib": "lib"
   },
-  "scripts": {},
+  "scripts": {
+    "evaluate:strands-intents": "node evaluation/evaluate-strands-intent-classifier.mjs",
+    "evaluate:strands-intents:evaluated": "node evaluation/evaluate-strands-intent-classifier.mjs --cases evaluation/strands-intent-classifier-evaluated-cases.json",
+    "evaluate:strands-intents:new": "node evaluation/evaluate-strands-intent-classifier.mjs --cases evaluation/strands-intent-classifier-new-cases.json",
+    "evaluate:conversation-flow": "node evaluation/evaluate-conversation-flow.mjs",
+    "evaluate:conversation-flow:evaluated": "node evaluation/evaluate-conversation-flow.mjs --cases evaluation/strands-conversation-flow-evaluated-cases.json",
+    "evaluate:conversation-flow:new": "node evaluation/evaluate-conversation-flow.mjs --cases evaluation/strands-conversation-flow-new-cases.json"
+  },
   "author": "davelem",
   "license": "MIT-0",
   "devDependencies": {
@@ -18,11 +25,14 @@
     "@aws-sdk/client-bedrock-runtime": "^3.529.0",
     "@aws-sdk/client-dynamodb": "^3.529.0",
     "@aws-sdk/client-firehose": "^3.688.0",
+    "@aws-sdk/client-lambda": "^3.1068.0",
     "@aws-sdk/client-pinpoint-sms-voice-v2": "^3.670.0",
     "@aws-sdk/client-socialmessaging": "^3.670.0",
     "@aws-sdk/lib-dynamodb": "^3.670.0",
+    "@strands-agents/sdk": "^1.5.0",
     "@types/aws-lambda": "^8.10.119",
     "cfn-custom-resource": "^5.0.16",
-    "xss": "^1.0.15"
+    "xss": "^1.0.15",
+    "zod": "^4.4.3"
   }
 }

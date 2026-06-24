@@ -12,9 +12,9 @@ export async function markMessageAsRead (messageId) {
   }
 
   let params = {
-    originationPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID, 
-    message: new TextEncoder().encode(JSON.stringify(message)), 
-    metaApiVersion: "v19.0", 
+    originationPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+    message: new TextEncoder().encode(JSON.stringify(message)),
+    metaApiVersion: "v19.0",
   }
 
   try {
@@ -22,10 +22,10 @@ export async function markMessageAsRead (messageId) {
     const response = await client.send(command);
     return response
   } catch (error) {
-      console.error('WhatsAppService.markMessageAsRead: ', error);
-      throw new Error(error.message);
+    console.error('WhatsAppService.markMessageAsRead: ', error);
+    throw new Error(error.message);
   }
-} 
+}
 
 
 export async function sendWhatsAppMessage (destinationAddress, outboundMessage, previewUrl = false, sessionId=undefined) {
@@ -44,9 +44,9 @@ export async function sendWhatsAppMessage (destinationAddress, outboundMessage, 
   }
 
   let params = {
-    originationPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID, 
-    message: new TextEncoder().encode(JSON.stringify(message)), 
-    metaApiVersion: "v19.0", 
+    originationPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+    message: new TextEncoder().encode(JSON.stringify(message)),
+    metaApiVersion: "v19.0",
   }
 
   console.trace('params: ', params)
@@ -56,8 +56,8 @@ export async function sendWhatsAppMessage (destinationAddress, outboundMessage, 
     const response = await client.send(command);
     return response
   } catch (error) {
-      console.error('WhatsAppService.sendWhatsAppMessage: ', error);
-      throw new Error(error.message);
+    console.error('WhatsAppService.sendWhatsAppMessage: ', error);
+    throw new Error(error.message);
   }
 }
 
@@ -74,9 +74,9 @@ export async function sendWhatsAppImage (destinationAddress, mediaId, outboundMe
   }
 
   let params = {
-    originationPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID, 
-    message: new TextEncoder().encode(JSON.stringify(message)), 
-    metaApiVersion: "v19.0", 
+    originationPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+    message: new TextEncoder().encode(JSON.stringify(message)),
+    metaApiVersion: "v19.0",
   }
 
   console.trace('params: ', params)
@@ -86,14 +86,164 @@ export async function sendWhatsAppImage (destinationAddress, mediaId, outboundMe
     const response = await client.send(command);
     return response
   } catch (error) {
-      console.error('WhatsAppService.sendWhatsAppImage: ', error);
-      throw new Error(error.message);
+    console.error('WhatsAppService.sendWhatsAppImage: ', error);
+    throw new Error(error.message);
+  }
+}
+
+export async function sendWhatsAppImageLink (destinationAddress, mediaUrl, outboundMessage) {
+  let message = {
+    "messaging_product": "whatsapp",
+    "recipient_type": "individual",
+    "to": destinationAddress,
+    "type": "image",
+    "image": {
+      "link" : mediaUrl,
+      "caption": outboundMessage
+    }
+  }
+
+  let params = {
+    originationPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+    message: new TextEncoder().encode(JSON.stringify(message)),
+    metaApiVersion: "v19.0",
+  }
+
+  console.trace('params: ', params)
+
+  try {
+    const command = new SendWhatsAppMessageCommand(params);
+    const response = await client.send(command);
+    return response
+  } catch (error) {
+    console.error('WhatsAppService.sendWhatsAppImageLink: ', error);
+    throw new Error(error.message);
+  }
+}
+
+export async function sendWhatsAppVideo (destinationAddress, mediaId, outboundMessage) {
+  let message = {
+    "messaging_product": "whatsapp",
+    "recipient_type": "individual",
+    "to": destinationAddress,
+    "type": "video",
+    "video": {
+      "id" : mediaId,
+      "caption": outboundMessage
+    }
+  }
+
+  let params = {
+    originationPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+    message: new TextEncoder().encode(JSON.stringify(message)),
+    metaApiVersion: "v19.0",
+  }
+
+  console.trace('params: ', params)
+
+  try {
+    const command = new SendWhatsAppMessageCommand(params);
+    const response = await client.send(command);
+    return response
+  } catch (error) {
+    console.error('WhatsAppService.sendWhatsAppVideo: ', error);
+    throw new Error(error.message);
+  }
+}
+
+export async function sendWhatsAppVideoLink (destinationAddress, mediaUrl, outboundMessage) {
+  let message = {
+    "messaging_product": "whatsapp",
+    "recipient_type": "individual",
+    "to": destinationAddress,
+    "type": "video",
+    "video": {
+      "link" : mediaUrl,
+      "caption": outboundMessage
+    }
+  }
+
+  let params = {
+    originationPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+    message: new TextEncoder().encode(JSON.stringify(message)),
+    metaApiVersion: "v19.0",
+  }
+
+  console.trace('params: ', params)
+
+  try {
+    const command = new SendWhatsAppMessageCommand(params);
+    const response = await client.send(command);
+    return response
+  } catch (error) {
+    console.error('WhatsAppService.sendWhatsAppVideoLink: ', error);
+    throw new Error(error.message);
+  }
+}
+
+export async function sendWhatsAppAudioLink (destinationAddress, mediaUrl) {
+  let message = {
+    "messaging_product": "whatsapp",
+    "recipient_type": "individual",
+    "to": destinationAddress,
+    "type": "audio",
+    "audio": {
+      "link" : mediaUrl
+    }
+  }
+
+  let params = {
+    originationPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+    message: new TextEncoder().encode(JSON.stringify(message)),
+    metaApiVersion: "v19.0",
+  }
+
+  console.trace('params: ', params)
+
+  try {
+    const command = new SendWhatsAppMessageCommand(params);
+    const response = await client.send(command);
+    return response
+  } catch (error) {
+    console.error('WhatsAppService.sendWhatsAppAudioLink: ', error);
+    throw new Error(error.message);
+  }
+}
+
+export async function sendWhatsAppDocumentLink (destinationAddress, mediaUrl, outboundMessage, filename) {
+  let message = {
+    "messaging_product": "whatsapp",
+    "recipient_type": "individual",
+    "to": destinationAddress,
+    "type": "document",
+    "document": {
+      "link" : mediaUrl,
+      "caption": outboundMessage,
+      "filename": filename
+    }
+  }
+
+  let params = {
+    originationPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+    message: new TextEncoder().encode(JSON.stringify(message)),
+    metaApiVersion: "v19.0",
+  }
+
+  console.trace('params: ', params)
+
+  try {
+    const command = new SendWhatsAppMessageCommand(params);
+    const response = await client.send(command);
+    return response
+  } catch (error) {
+    console.error('WhatsAppService.sendWhatsAppDocumentLink: ', error);
+    throw new Error(error.message);
   }
 }
 
 // {
 //   "name": templateName,
-//   "language": 
+//   "language":
 //   {
 //     "code": "en"
 //   },
@@ -116,9 +266,9 @@ export async function sendWhatsAppTemplateMessage (destinationAddress, template)
   console.trace('message: ', message)
 
   let params = {
-    originationPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID, 
-    message: new TextEncoder().encode(JSON.stringify(message)), 
-    metaApiVersion: "v19.0", 
+    originationPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+    message: new TextEncoder().encode(JSON.stringify(message)),
+    metaApiVersion: "v19.0",
   }
 
   console.trace('params: ', params)
@@ -128,8 +278,83 @@ export async function sendWhatsAppTemplateMessage (destinationAddress, template)
     const response = await client.send(command);
     return response
   } catch (error) {
-      console.error('WhatsAppService.sendWhatsAppTemplateMessage: ', error);
-      throw new Error(error.message);
+    console.error('WhatsAppService.sendWhatsAppTemplateMessage: ', error);
+    throw new Error(error.message);
   }
 }
 
+export async function sendWhatsAppInteractiveButtons (destinationAddress, bodyText, buttons, sessionId = undefined) {
+  let message = {
+    "messaging_product": "whatsapp",
+    "recipient_type": "individual",
+    "to": destinationAddress,
+    "type": "interactive",
+    "interactive": {
+      "type": "button",
+      "body": { "text": bodyText },
+      "action": {
+        "buttons": (buttons || []).slice(0, 3).map((button) => ({
+          "type": "reply",
+          "reply": { "id": button.id, "title": button.title }
+        }))
+      }
+    }
+  }
+  if (sessionId) {
+    message.biz_opaque_callback_data = sessionId
+  }
+
+  let params = {
+    originationPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+    message: new TextEncoder().encode(JSON.stringify(message)),
+    metaApiVersion: "v19.0",
+  }
+
+  console.trace('params: ', params)
+
+  try {
+    const command = new SendWhatsAppMessageCommand(params);
+    const response = await client.send(command);
+    return response
+  } catch (error) {
+    console.error('WhatsAppService.sendWhatsAppInteractiveButtons: ', error);
+    throw new Error(error.message);
+  }
+}
+
+export async function sendWhatsAppCtaUrl (destinationAddress, bodyText, displayText, url, sessionId = undefined) {
+  let message = {
+    "messaging_product": "whatsapp",
+    "recipient_type": "individual",
+    "to": destinationAddress,
+    "type": "interactive",
+    "interactive": {
+      "type": "cta_url",
+      "body": { "text": bodyText },
+      "action": {
+        "name": "cta_url",
+        "parameters": { "display_text": displayText, "url": url }
+      }
+    }
+  }
+  if (sessionId) {
+    message.biz_opaque_callback_data = sessionId
+  }
+
+  let params = {
+    originationPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+    message: new TextEncoder().encode(JSON.stringify(message)),
+    metaApiVersion: "v19.0",
+  }
+
+  console.trace('params: ', params)
+
+  try {
+    const command = new SendWhatsAppMessageCommand(params);
+    const response = await client.send(command);
+    return response
+  } catch (error) {
+    console.error('WhatsAppService.sendWhatsAppCtaUrl: ', error);
+    throw new Error(error.message);
+  }
+}

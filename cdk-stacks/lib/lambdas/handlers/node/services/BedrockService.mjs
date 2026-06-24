@@ -7,8 +7,40 @@ const bedrock = new BedrockRuntimeClient({ region: process.env.AWS_REGION });
 import { BedrockAgentRuntimeClient, InvokeAgentCommand, RetrieveAndGenerateCommand } from "@aws-sdk/client-bedrock-agent-runtime";
 const agentRuntime = new BedrockAgentRuntimeClient({ region: process.env.AWS_REGION });
 
-const { BedrockAgentClient, StartIngestionJobCommand } = require("@aws-sdk/client-bedrock-agent"); 
+const { BedrockAgentClient, StartIngestionJobCommand } = require("@aws-sdk/client-bedrock-agent");
 const agent = new BedrockAgentClient({ region: process.env.AWS_REGION });
+
+const AGENT_RETRY_MAX_ATTEMPTS = parseInt(process.env.BEDROCK_AGENT_RETRY_MAX_ATTEMPTS || '3', 10)
+const AGENT_RETRY_BASE_DELAY_MS = parseInt(process.env.BEDROCK_AGENT_RETRY_BASE_DELAY_MS || '500', 10)
+
+const RETRYABLE_AGENT_ERROR_NAMES = new Set([
+  'DependencyFailedException',
+  'InternalServerException',
+  'ServiceUnavailableException',
+  'ThrottlingException',
+  'TooManyRequestsException'
+])
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const isRetryableAgentError = (error) => {
+  const message = (error?.message || '').toLowerCase()
+  return Boolean(
+    error?.$retryable ||
+    RETRYABLE_AGENT_ERROR_NAMES.has(error?.name) ||
+    message.includes('timeout') ||
+    message.includes('try the request again') ||
+    message.includes('temporarily unavailable')
+  )
+}
+
+const buildAgentRetryMessage = (error) => {
+  if (error?.name === 'ThrottlingException' || error?.name === 'TooManyRequestsException') {
+    return 'Le service reçoit trop de demandes pour le moment. Merci de réessayer dans une minute.'
+  }
+
+  return "Le service met trop de temps à répondre pour le moment. Merci de réessayer dans quelques instants."
+}
 
 export async function invokeModel (promptEnvelope, useCase) {
   console.trace('invokeModel')
@@ -16,10 +48,10 @@ export async function invokeModel (promptEnvelope, useCase) {
   console.trace(promptEnvelope)
 
   const input = { // InvokeModelRequest
-      body: JSON.stringify(promptEnvelope),
-      contentType: "application/json",
-      accept: "application/json",
-      modelId: useCase.modelId, 
+    body: JSON.stringify(promptEnvelope),
+    contentType: "application/json",
+    accept: "application/json",
+    modelId: useCase.modelId,
   };
 
   if (useCase.guardrailId){
@@ -37,8 +69,8 @@ export async function invokeModel (promptEnvelope, useCase) {
     const response = new TextDecoder().decode(bedrockResponse.body)
     return JSON.parse(response)
   } catch (error) {
-      console.error('Bedrock.invokeModel: ', error);
-      throw new Error(error.message);
+    console.error('Bedrock.invokeModel: ', error);
+    throw new Error(error.message);
   }
 }
 
@@ -64,8 +96,8 @@ export async function converse (promptEnvelope, useCase) {
     const response = new TextDecoder().decode(bedrockResponse.body)
     return bedrockResponse.output.message.content[0].text
   } catch (error) {
-      console.error('Bedrock.converse: ', error);
-      throw new Error(error.message);
+    console.error('Bedrock.converse: ', error);
+    throw new Error(error.message);
   }
 }
 
@@ -74,40 +106,68 @@ export async function invokeAgent (prompt, useCase, sessionId, sessionState=unde
   const agentId = useCase.agentId;
   const agentAliasId = useCase.agentAliasId;
 
-  const command = new InvokeAgentCommand({
-    agentId,
-    agentAliasId,
-    sessionId,
-    inputText: prompt,
-    sessionState
-  });
+  for (let attempt = 1; attempt <= AGENT_RETRY_MAX_ATTEMPTS; attempt++) {
+    const command = new InvokeAgentCommand({
+      agentId,
+      agentAliasId,
+      sessionId,
+      inputText: prompt,
+      sessionState
+    });
 
-  console.trace(command)
+    console.trace(command)
 
-  try {
+    try {
 
-    let completion = "";
-    const response = await agentRuntime.send(command);
+      let completion = "";
+      let returnControl = undefined;
+      const response = await agentRuntime.send(command);
 
-    if (response.completion === undefined) {
-      throw new Error("Completion is undefined");
-    }
+      if (response.completion === undefined) {
+        throw new Error("Completion is undefined");
+      }
 
-    for await (const chunkEvent of response.completion) {
-      const chunk = chunkEvent.chunk;
-      console.log('chunk: ',chunk);
-      const decodedResponse = new TextDecoder("utf-8").decode(chunk.bytes);
-      completion += decodedResponse;
-    }
+      for await (const chunkEvent of response.completion) {
+        if (chunkEvent.returnControl) {
+          console.log('returnControl: ', chunkEvent.returnControl);
+          returnControl = chunkEvent.returnControl;
+        }
 
-    return { completion };
+        const chunk = chunkEvent.chunk;
+        if (chunk?.bytes) {
+          const decodedResponse = new TextDecoder("utf-8").decode(chunk.bytes);
+          console.log('chunk decoded', { byteLength: chunk.bytes.length, textLength: decodedResponse.length });
+          completion += decodedResponse;
+        }
+      }
 
-  } catch (error) {
-    console.error('InvokeAgent error: ', error);
-    if (error.name == "ThrottlingException"){
-      return {output:{text:'Request Rate exceeded, please wait a minute and try again'}}
-    } else {
-      throw new Error(error.message);
+      return { completion, returnControl };
+
+    } catch (error) {
+      const retryable = isRetryableAgentError(error)
+      const attemptsRemaining = attempt < AGENT_RETRY_MAX_ATTEMPTS
+
+      console.error('InvokeAgent error: ', {
+        name: error?.name,
+        message: error?.message,
+        attempt,
+        retryable,
+        attemptsRemaining,
+        stack: error?.stack
+      });
+
+      if (retryable && attemptsRemaining) {
+        const delayMs = AGENT_RETRY_BASE_DELAY_MS * attempt
+        await sleep(delayMs)
+        continue
+      }
+
+      if (retryable) {
+        const completion = buildAgentRetryMessage(error)
+        return { completion, output: { text: completion } }
+      }
+
+      throw error;
     }
   }
 }
@@ -123,17 +183,17 @@ export async function retrieveAndGenerate (prompt, useCase, sessionId=undefined)
   }
   const input = {
     input: {
-      text: prompt, 
+      text: prompt,
     },
     retrieveAndGenerateConfiguration: {
-      type: "KNOWLEDGE_BASE", 
+      type: "KNOWLEDGE_BASE",
       knowledgeBaseConfiguration: {
-        knowledgeBaseId: useCase.knowledgeBaseId, 
+        knowledgeBaseId: useCase.knowledgeBaseId,
         modelArn: modelArn,
         generationConfiguration: {
           inferenceConfig: {
             textInferenceConfig: {
-              maxTokens: parseInt(useCase.llmMaxTokens), 
+              maxTokens: parseInt(useCase.llmMaxTokens),
               temperature: parseFloat(useCase.llmTemperature)
             }
           },
@@ -154,7 +214,15 @@ export async function retrieveAndGenerate (prompt, useCase, sessionId=undefined)
 
   if (useCase.promptTemplate){
     input.retrieveAndGenerateConfiguration.knowledgeBaseConfiguration.generationConfiguration.promptTemplate = {
-        textPromptTemplate: useCase.promptTemplate
+      textPromptTemplate: useCase.promptTemplate
+    }
+  }
+
+  if (useCase.retrievalFilter) {
+    input.retrieveAndGenerateConfiguration.knowledgeBaseConfiguration.retrievalConfiguration = {
+      vectorSearchConfiguration: {
+        filter: useCase.retrievalFilter
+      }
     }
   }
 
@@ -166,31 +234,31 @@ export async function retrieveAndGenerate (prompt, useCase, sessionId=undefined)
     console.trace(response)
     return response
   } catch (error) {
-      console.error('Bedrock.retrieveAndGenerate: ', error);
-      if (error.name == "ThrottlingException"){
-        return {output:{text:'Request Rate exceeded, please wait a minute and try again'}}
-      } else {
-        throw new Error(error.message);
-      }
+    console.error('Bedrock.retrieveAndGenerate: ', error);
+    if (error.name == "ThrottlingException"){
+      return {output:{text:'Request Rate exceeded, please wait a minute and try again'}}
+    } else {
+      throw new Error(error.message);
+    }
   }
 }
 
 export async function startIngestionJob (context) {
 
   const input = {
-    knowledgeBaseId: process.env.KNOWLEDGE_BASE_ID, 
-    dataSourceId: process.env.DATA_SOURCE_ID, 
-    clientToken: context.awsRequestId, 
+    knowledgeBaseId: process.env.KNOWLEDGE_BASE_ID,
+    dataSourceId: process.env.DATA_SOURCE_ID,
+    clientToken: context.awsRequestId,
   };
   console.trace(input)
-  
+
   try {
     const command = new StartIngestionJobCommand(input);
     const response = await agent.send(command);
     console.trace(response)
     return response
   } catch (error) {
-      console.error('Bedrock.startIngestionJob: ', error);
-      throw new Error(error.message);
+    console.error('Bedrock.startIngestionJob: ', error);
+    throw new Error(error.message);
   }
 }
