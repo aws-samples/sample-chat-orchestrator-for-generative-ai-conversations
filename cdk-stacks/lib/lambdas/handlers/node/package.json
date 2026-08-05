@@ -10,7 +10,7 @@
   "author": "davelem",
   "license": "MIT-0",
   "devDependencies": {
-    "esbuild": "^0.25.0"
+    "esbuild": "^0.28.1"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-agent": "^3.620.1",
