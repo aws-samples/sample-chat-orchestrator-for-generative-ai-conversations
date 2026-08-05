@@ -10,8 +10,12 @@ import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as s3assets from 'aws-cdk-lib/aws-s3-assets';
 import * as kms from "aws-cdk-lib/aws-kms"
 import * as logs from "aws-cdk-lib/aws-logs"
+import * as bedrockagentcore from 'aws-cdk-lib/aws-bedrockagentcore';
+import * as cr from 'aws-cdk-lib/custom-resources';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { loadSSMParams } from '../lib/infrastructure/ssm-params-util';
 import { NagSuppressions } from 'cdk-nag'
 import path = require('path');
@@ -742,6 +746,163 @@ $query$`,
           Data: JSON.stringify(useCaseData),
           Random: Date.now().toString() 
         }
+      });
+    }
+
+    //AgentCore Runtime Configuration
+    if (ssmParams.useAgentCoreRuntime) {
+      // Upload agent code to S3 — CDK zips and uploads automatically.
+      // Dependencies are pre-installed into lib/ by the build:agent npm script.
+      const agentCoreCodeAsset = new s3assets.Asset(this, 'AgentCoreCodeAsset', {
+        path: path.join(__dirname, '../../sample-agentcore-agent'),
+        exclude: ['README.md', '__pycache__', '*.pyc', '.git'],
+      });
+
+      // IAM Role for AgentCore Runtime
+      const agentCoreRuntimeRole = new iam.Role(this, 'AgentCoreRuntimeRole', {
+        assumedBy: new iam.ServicePrincipal('bedrock-agentcore.amazonaws.com'),
+        inlinePolicies: {
+          AgentCoreRuntimePolicy: new iam.PolicyDocument({
+            statements: [
+              new iam.PolicyStatement({
+                actions: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
+                resources: ['*'],
+              }),
+              new iam.PolicyStatement({
+                actions: ['s3:GetObject', 's3:ListBucket'],
+                resources: [
+                  agentCoreCodeAsset.bucket.bucketArn,
+                  `${agentCoreCodeAsset.bucket.bucketArn}/*`,
+                ],
+              }),
+              new iam.PolicyStatement({
+                actions: [
+                  'logs:CreateLogGroup',
+                  'logs:CreateLogStream',
+                  'logs:PutLogEvents',
+                ],
+                resources: ['*'],
+              }),
+            ],
+          }),
+        },
+      });
+
+      // Create the AgentCore Runtime from S3 code (no Docker required)
+      // AgentCore runtime names must match: [a-zA-Z][a-zA-Z0-9_]{0,47}
+      const runtimeName = configParams.CdkAppName.replace(/[^a-zA-Z0-9_]/g, '_') + '_agentcore_runtime';
+      const agentCoreRuntime = new bedrockagentcore.CfnRuntime(this, 'AgentCoreRuntime', {
+        agentRuntimeName: runtimeName,
+        description: 'Sample Strands agent deployed via S3 code asset',
+        roleArn: agentCoreRuntimeRole.roleArn,
+        agentRuntimeArtifact: {
+          codeConfiguration: {
+            code: {
+              s3: {
+                bucket: agentCoreCodeAsset.s3BucketName,
+                prefix: agentCoreCodeAsset.s3ObjectKey,
+              },
+            },
+            runtime: 'PYTHON_3_12',
+            entryPoint: ['main.py'],
+          },
+        },
+        networkConfiguration: {
+          networkMode: 'PUBLIC',
+        },
+        protocolConfiguration: 'HTTP',
+      });
+
+      // Wait for AgentCore Runtime to reach READY status before allowing invocations
+      const runtimeWaiterFn = new lambda.Function(this, 'RuntimeWaiterFn', {
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handler.handler',
+        code: lambda.Code.fromAsset(path.join(__dirname, 'lambdas/handlers/python/wait-for-runtime')),
+        timeout: Duration.minutes(10),
+        memorySize: 256,
+        initialPolicy: [
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['bedrock-agentcore:GetAgentRuntime'],
+            resources: [`arn:aws:bedrock-agentcore:${this.region}:${this.account}:runtime/*`],
+          }),
+        ],
+      });
+
+      const runtimeWaiterProvider = new cr.Provider(this, 'RuntimeWaiterProvider', {
+        onEventHandler: runtimeWaiterFn,
+        logRetention: logs.RetentionDays.ONE_DAY,
+      });
+
+      const runtimeWait = new CustomResource(this, 'AgentCoreRuntimeWait', {
+        serviceToken: runtimeWaiterProvider.serviceToken,
+        properties: {
+          RuntimeId: agentCoreRuntime.attrAgentRuntimeId,
+          Region: this.region,
+        },
+      });
+
+      // Lambda that invokes the AgentCore Runtime
+      const agentCoreResponseGeneratorLambda = new nodeLambda.NodejsFunction(this, 'agentCoreResponseGeneratorLambda', {
+        runtime: Runtime.NODEJS_22_X,
+        entry: path.join(__dirname, 'lambdas/handlers/node/response-generators/agentCoreResponseGenerator.mjs'),
+        timeout: Duration.seconds(60),
+        memorySize: 512,
+        logFormat: 'JSON',
+        applicationLogLevel: 'INFO',
+        environment: {
+          "APPLICATION_VERSION": `v${this.node.tryGetContext('application_version')} (${new Date().toISOString()})`,
+        },
+        initialPolicy: [
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              "bedrock-agentcore:InvokeAgentRuntime",
+              "bedrock-agentcore:InvokeAgentRuntimeForUser"
+            ],
+            resources: [`${agentCoreRuntime.attrAgentRuntimeArn}`, `${agentCoreRuntime.attrAgentRuntimeArn}/*`]
+          }),
+        ]
+      })
+
+      chatOrchestratorLambda.addToRolePolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['lambda:InvokeFunction'],
+          resources: [`arn:aws:lambda:${this.region}:${this.account}:function:${agentCoreResponseGeneratorLambda.functionName}`]
+        }),
+      );
+
+      //Put Config Data
+      let useCaseData = {
+        useCase: 'agentcore',
+        agentRuntimeArn: agentCoreRuntime.attrAgentRuntimeArn,
+        responseGeneratorLambdaName: agentCoreResponseGeneratorLambda.functionName,
+        channels: targetChannels,
+        initialMessage: '[AI Assistant] Hello! I am an AI-powered assistant. How can I help you today?\n\nTry asking:\n- "What time is it?"\n- "What is the status of order ORD-12345?"'
+      }
+      const putAgentCoreConfig = new CustomResource(this, `${configParams.CdkAppName}-PutAgentCoreConfig`, {
+        resourceType: 'Custom::PutDynamoDBData',
+        serviceToken: configLambda.functionArn,
+        serviceTimeout: Duration.seconds(30),
+        properties: {
+          UseCaseTableName: useCaseTable.tableName,
+          Data: JSON.stringify(useCaseData),
+          Random: Date.now().toString() 
+        }
+      });
+      putAgentCoreConfig.node.addDependency(runtimeWait);
+
+      NagSuppressions.addResourceSuppressionsByPath(this, '/MultiChannelGenAI2/agentCoreResponseGeneratorLambda/Resource', [
+        {
+          id: 'AwsSolutions-IAM5',
+          reason: 'The function needs to call the InvokeAgentRuntime API for the CDK-managed AgentCore runtime.'
+        },
+      ])
+
+      new CfnOutput(this, "AgentCoreRuntimeArn", {
+        value: agentCoreRuntime.attrAgentRuntimeArn,
+        description: 'ARN of the deployed AgentCore Runtime',
       });
     }
 

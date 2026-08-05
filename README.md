@@ -59,9 +59,11 @@ On a high-level, the solution consists of the following CDK (CloudFormation) sta
 * One (or Both) of the following:
     * Amazon Bedrock Knowledge Base: In order to use the chat processor with a knowledge base you need to have a [Bedrock Knowledge Base](https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-build.html) configured in your account.  
     * Amazon Bedrock Agent: If you want to use the chat processor with an agent instead of a knowledge base, you will need to have a [Bedrock Agent](https://docs.aws.amazon.com/bedrock/latest/userguide/agents.html) created in your region prior to deploying the solution. Sample agents are available in the [Bedrock Agent Samples](https://github.com/aws-samples/amazon-bedrock-samples/tree/main/agents-and-function-calling/bedrock-agents/features-examples/13-create-agent-using-CDK) repository.
+    * Amazon Bedrock AgentCore Runtime (Optional): If you want to use a custom Strands agent, set `use-agentcore-runtime` to true during configuration. CDK automatically uploads the agent source code from `sample-agentcore-agent/` to S3 and creates the AgentCore Runtime — no Docker, ECR, or pre-built images required. See the [`sample-agentcore-agent/`](./sample-agentcore-agent/) directory for a reference implementation.
 * Node (> v18) and NPM (> v8.19) [installed and configured on your computer](https://nodejs.org/en/download/package-manager)
+* Python 3.12 and pip3 [installed on your computer](https://www.python.org/downloads/) (required for bundling AgentCore agent dependencies)
 * AWS CLI (v2) [installed and configured on your computer](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-* AWS CDK (v2) [installed and configured on your computer](https://docs.aws.amazon.com/cdk/v2/guide/getting_started).
+* AWS CDK (v2 >= 2.252.0) [installed and configured on your computer](https://docs.aws.amazon.com/cdk/v2/guide/getting_started). Version 2.252.0 or later is required for AgentCore Runtime support.
 * If configuring SMS: An [ACTIVE SMS Origination Phone Number provisioned](https://docs.aws.amazon.com/sms-voice/latest/userguide/phone-numbers-request.html) in AWS End User Messaging SMS. Note: This must be an Active number that has been registered. Within the US, you can use 10DLC or Toll Free Numbers (TFNs).
 * If configuring WhatsApp: An [ACTIVE WhatsApp Origination Phone Number provisioned](https://docs.aws.amazon.com/social-messaging/latest/userguide/getting-started.html) in AWS End User Messaging Social. Note: This must be an Active number that has been registered with Meta/WhatsApp.
 * If configuring Outbound Email: An [ACTIVE Email Origination Address provisioned](https://docs.aws.amazon.com/ses/latest/userguide/verify-email-addresses.html) in AWS SES. Note: This must be an Active address that has been verified.
@@ -116,6 +118,8 @@ These instructions assume you have completed all the prerequisites.
             - `bedrock-agent-id`: The ID of the Bedrock Agent you want to use. Can be found in the Bedrock console.
             - `bedrock-agent-alias-id`: The ID of the Bedrock Agent Alias you want to use. Can be found in the Bedrock console.
 
+        - `use-agentcore-runtime`: Set to true to deploy and use AgentCore Runtime for the chatbot. The runtime is created automatically from the `sample-agentcore-agent/` source code — no Docker or ECR setup required.
+
         - `deploy-api-stack`: Set to true to deploy the API Stack
             - `api-allowed-origins`: The domain of your web application, to allow CORS. For example: https://aaaabbbbcccc.cloudfront.net. Defaults to "*" if not specified.
 
@@ -146,7 +150,7 @@ These instructions assume you have completed all the prerequisites.
 7. Test the solution
 
     By default, the solution will configure a use-case for the Knowledge Base and/or Agent if specified in the configure step
-    - Using either SMS or WhatsApp, send  `kb` or `agent` to the AWS End User Messaging Phone Number you selected.  You should receive a response from the solution with instructions to proceed with the demo.
+    - Using either SMS or WhatsApp, send `kb`, `agent`, or `agentcore` to the AWS End User Messaging Phone Number you selected.  You should receive a response from the solution with instructions to proceed with the demo.
 
 ## Use Case Configuration
 A Use Case describes different messaging scenarios.  By default, the solution will configure a use case for Knowledge Bases and/or Agents.  Each use case will define the channels (SMS and/or WhatsApp) supported by that particular use case. 
@@ -204,6 +208,26 @@ Agent Use Case Configuration:
   - `responseGeneratorLambdaName` - The Lambda function that generates responses
 
 When a user sends "agent" to start an Agent conversation, the solution looks up this configuration to determine how to route and process messages through the Bedrock Agent.
+
+### AgentCore Runtime
+Below is the structure for AgentCore Runtime use cases:
+
+AgentCore Runtime Use Case Configuration:
+- `useCase` - The identifier "agentcore" for AgentCore Runtime use cases
+- `channels` - Array of channel configurations:
+  - `channel` - The messaging channel ("sms", "whatsapp", or "email")
+  - `enabled` - Whether this channel is enabled for the use case
+  - `phoneNumberId` - The End User Messaging phone number ID
+  - `processorLambdaName` - The Lambda function that processes messages for this channel
+
+- AgentCore Configuration:
+  - `agentRuntimeArn` - The ARN of the AgentCore Runtime endpoint
+  - `initialMessage` - The first message sent when a user starts this use case
+  - `responseGeneratorLambdaName` - The Lambda function that generates responses
+
+When a user sends "agentcore" to start an AgentCore conversation, the solution looks up this configuration to determine how to route and process messages through the AgentCore Runtime agent.
+
+> Note: When `use-agentcore-runtime` is set to true, CDK automatically packages the agent source code from [`sample-agentcore-agent/`](./sample-agentcore-agent/), uploads it to S3, and creates the AgentCore Runtime. The runtime ARN is wired into the DynamoDB use case configuration automatically. To customize the agent, edit the files in `sample-agentcore-agent/` and redeploy.
 
 ## REST API (Optional)
 If you opted to deploy the optional API, the solution will create an API Gateway REST API with a single `sendMessages` method that you can **POST** information to.  
@@ -474,3 +498,4 @@ You take full ownership and responsibility for the code running in your environm
 - Consider enabling model invocation logging and set alerts to ensure adherence to any responsible AI policies. - Model invocation logging is disabled by default. See https://docs.aws.amazon.com/bedrock/latest/userguide/model-invocation-logging.html
 - The starter project has extensive logging to CloudWatch, but does not have any monitoring or tracing included, you may want to look at using tools like CloudWatch Alarms and X-ray.
 - The starter project tags all resources with the tags listed in `cdk-stacks/config.params.json` and anything created through the dashboard has the tags in `cdk-stacks/lambdas/constants/Tags.js` added. You may wish to replace them with your own company requirements, or tag at a more granular level.
+- **AI Disclosure / Transparency**: Regulations such as the EU AI Act (Article 50, effective August 2, 2026) require AI systems that interact directly with people to clearly disclose that they are AI at the moment of contact. This solution includes a sample disclosure in the initial message (e.g., `[AI Assistant] Hello! I am an AI-powered assistant.`). You should review and customize this disclosure to meet the requirements of your jurisdiction and use case. Consult your legal team for guidance on applicable transparency obligations.
