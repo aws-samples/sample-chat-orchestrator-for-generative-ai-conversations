@@ -107,6 +107,14 @@
 			"parent": "useBedrockAgent"
 		},
 		{
+			"name": "useAgentCoreRuntime",
+			"cliFormat": "use-agentcore-runtime",
+			"description": "Set to true to deploy and use an AgentCore Runtime for the chatbot. The runtime is created automatically from the sample-agentcore-agent/ source code.",
+			"defaultValue": false,
+			"required": true,
+			"boolean": true
+		},
+		{
 			"name": "deployAPIStack",
 			"cliFormat": "deploy-api-stack",
 			"description": "Set to true to deploy the API Stack.",

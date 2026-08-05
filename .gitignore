@@ -32,3 +32,6 @@ scratchpad
 
 # Kiro steering docs
 .kiro
+
+# AgentCore bundled dependencies (built during deploy)
+sample-agentcore-agent/lib/

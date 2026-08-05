@@ -26,8 +26,9 @@
     "build:frontend": "npm run build:webapp",
     "build:frontend:gitbash": "npm run build:webapp:gitbash",
     "cdk:remove:context": "rm -f cdk.context.json",
-    "cdk:deploy": "npm run cdk:remove:context && cdk deploy --all --disable-rollback -c application_version=$npm_package_version",
-    "cdk:deploy:gitbash": "npm run cdk:remove:context && winpty cdk.cmd deploy --all --disable-rollback -c application_version=$npm_package_version",
+    "cdk:deploy": "npm run build:agent && npm run cdk:remove:context && cdk deploy --all --disable-rollback -c application_version=$npm_package_version",
+    "cdk:deploy:gitbash": "npm run build:agent && npm run cdk:remove:context && winpty cdk.cmd deploy --all --disable-rollback -c application_version=$npm_package_version",
+    "build:agent": "pip3 install -r ../sample-agentcore-agent/requirements.txt -t ../sample-agentcore-agent/lib --platform manylinux2014_aarch64 --only-binary=:all: --python-version 3.12 --upgrade --quiet",
     "build:deploy:all": "npm run build:frontend && npm run cdk:deploy",
     "build:deploy:all:gitbash": "npm run build:frontend:gitbash && npm run cdk:deploy:gitbash",
     "cdk:synth": "cdk synth -c application_version=$npm_package_version"
@@ -35,11 +36,16 @@
   "author": "prod-apps-builder-team",
   "license": "MIT-0",
   "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.7",
     "@types/node": "^18.7.16",
+    "babel-jest": "^30.4.1",
     "cdk-nag": "^2.27.108",
     "constructs": "^10.2.69",
     "esbuild": "^0.25.0",
+    "fast-check": "^3.23.2",
     "jest": "^29.6.3",
+    "ts-jest": "^29.4.11",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
   },
@@ -50,7 +56,7 @@
     "@aws-sdk/client-ssm": "^3.1027.0",
     "@cdklabs/generative-ai-cdk-constructs": "^0.1.292",
     "aws-cdk": "^2.178.2",
-    "aws-cdk-lib": "^2.247.0",
+    "aws-cdk-lib": "^2.263.0",
     "source-map-support": "^0.5.21"
   }
 }
