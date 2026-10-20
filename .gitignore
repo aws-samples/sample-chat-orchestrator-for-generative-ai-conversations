@@ -28,6 +28,9 @@ build
 #scratchpad folder
 scratchpad
 
+# Temporary files (agent/dev scratch space)
+tmp/
+
 .DS_Store
 
 # Kiro steering docs

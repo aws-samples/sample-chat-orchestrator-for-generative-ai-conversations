@@ -33,6 +33,28 @@
 			"parent": "smsEnabled"
 		},
 		{
+			"name": "rcsEnabled",
+			"cliFormat": "rcs-enabled",
+			"description": "Set to true to enable RCS support",
+			"defaultValue": false,
+			"required": true,
+			"boolean": true
+		},
+		{
+			"name": "rcsAgentId",
+			"cliFormat": "rcs-agent-id",
+			"description": "The ID of the AWS RCS Agent you want to use (e.g. rcs-a1b2c3d4). Can be found in the End User Messaging SMS console.",
+			"required": true,
+			"parent": "rcsEnabled"
+		},
+		{
+			"name": "rcsSNSTopicArn",
+			"cliFormat": "rcs-sns-topic-arn",
+			"description": "The ARN of the SNS Topic to be used when configuring two-way messaging on your AWS RCS Agent. If not provided, a new SNS Topic will be created and assigned to the RCS Agent.",
+			"required": false,
+			"parent": "rcsEnabled"
+		},
+		{
 			"name": "whatsappEnabled",
 			"cliFormat": "whatsapp-enabled",
 			"description": "Set to true to enable WhatsApp support",
