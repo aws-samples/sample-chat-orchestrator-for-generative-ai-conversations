@@ -5,9 +5,14 @@ It should not be considered fully Production-ready. If you plan to deploy and us
 
 ## Use-case scenario
 
-Demonstrates how you can create a communications hub to orchestrate chats between communications channels (AWS End User Messaging 2-way SMS and WhatsApp) and Amazon Bedrock Agents or Knowledge Bases. End users can chat with an Amazon Bedrock Agent to automate multistep tasks that seamlessly integrate with company systems, APIs and data sources. They can engage in dynamic, personalized chats with Amazon Bedrock Knowledge Bases built off documents stored in S3, or crawled from a public facing website.
+Demonstrates how you can create a communications hub to orchestrate chats between communications channels (AWS End User Messaging 2-way SMS, RCS, and WhatsApp) and Amazon Bedrock Agents or Knowledge Bases. End users can chat with an Amazon Bedrock Agent to automate multistep tasks that seamlessly integrate with company systems, APIs and data sources. They can engage in dynamic, personalized chats with Amazon Bedrock Knowledge Bases built off documents stored in S3, or crawled from a public facing website.
 
-![Demo](demo.gif)
+<table>
+  <tr>
+    <td align="center"><img src="demo.gif" alt="WhatsApp demo" width="320"/><br/><sub><b>WhatsApp</b></sub></td>
+    <td align="center"><img src="demo-rcs.gif" alt="RCS demo" width="320"/><br/><sub><b>RCS</b></sub></td>
+  </tr>
+</table>
 
 ## Table of Contents
 
@@ -65,6 +70,7 @@ On a high-level, the solution consists of the following CDK (CloudFormation) sta
 * AWS CLI (v2) [installed and configured on your computer](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 * AWS CDK (v2 >= 2.252.0) [installed and configured on your computer](https://docs.aws.amazon.com/cdk/v2/guide/getting_started). Version 2.252.0 or later is required for AgentCore Runtime support.
 * If configuring SMS: An [ACTIVE SMS Origination Phone Number provisioned](https://docs.aws.amazon.com/sms-voice/latest/userguide/phone-numbers-request.html) in AWS End User Messaging SMS. Note: This must be an Active number that has been registered. Within the US, you can use 10DLC or Toll Free Numbers (TFNs).
+* If configuring RCS: An AWS RCS Agent registered in AWS End User Messaging SMS, in a state that can send messages (a testing agent works for registered test devices). If you don't have one yet, you can create an RCS Agent in minutes using the [sample RCS agent setup](https://github.com/aws-samples/sample-rcs-agent-setup-and-send-messages) — it walks you through creating the agent, registering test devices, and sending your first messages. Note the RCS Agent must be in the same AWS Region as this solution.
 * If configuring WhatsApp: An [ACTIVE WhatsApp Origination Phone Number provisioned](https://docs.aws.amazon.com/social-messaging/latest/userguide/getting-started.html) in AWS End User Messaging Social. Note: This must be an Active number that has been registered with Meta/WhatsApp.
 * If configuring Outbound Email: An [ACTIVE Email Origination Address provisioned](https://docs.aws.amazon.com/ses/latest/userguide/verify-email-addresses.html) in AWS SES. Note: This must be an Active address that has been verified.
 
@@ -103,6 +109,10 @@ These instructions assume you have completed all the prerequisites.
             - `sms-origination-number-id`: The ID of the Origination Phone number you want to use. Can be found in the AWS End User Messaging SMS console by clicking on `Configurations -> Phone numbers` and selecting the phone number you want to use.  The ID is the `Phone number ID` column.  NOTE: This number shouldn't be part of a Phone Pool.
             - `sms-sns-topic-arn`: (Optional) The ARN of the SNS Topic to be used when configuring your SMS Origination Number for 2-way SMS. If not provided, a new SNS Topic will be created and assigned to the SMS Origination Number.
             - `sms-configuration-set`: (Optional) The configuration set to use for the SMS messages.
+
+        - `rcs-enabled`: Set to true to enable RCS support
+            - `rcs-agent-id`: The ID of the AWS RCS Agent you want to use (e.g. `rcs-a1b2c3d4`). Can be found in the AWS End User Messaging SMS console under `RCS -> Agents`. If you don't have an agent yet, see the [sample RCS agent setup](https://github.com/aws-samples/sample-rcs-agent-setup-and-send-messages) to create one in minutes.
+            - `rcs-sns-topic-arn`: (Optional) The ARN of the SNS Topic to be used when configuring two-way messaging on your AWS RCS Agent. If not provided, a new SNS Topic will be created and assigned to the RCS Agent.
 
         - `whatsapp-enabled`: Set to true to enable WhatsApp support
             - `whatsapp-business-account-id`: The ID of the WhatsApp Business Account you want to use. Can be found in the End User Messaging Social Messaging console.
@@ -163,7 +173,7 @@ Below is the structure for Knowledge Base use cases. For Bedrock Agent configura
 Knowledge Base Use Case Configuration:
 - `useCase` - The identifier "kb" for Knowledge Base use cases
 - `channels` - Array of channel configurations:
-  - `channel` - The messaging channel ("sms", "whatsapp", or "email")
+  - `channel` - The messaging channel ("sms", "rcs", "whatsapp", or "email")
   - `configurationSet` - (SMS only) The End User Messaging configuration set
   - `enabled` - Whether this channel is enabled for the use case
   - `phoneNumberId` - The End User Messaging phone number ID
@@ -192,7 +202,7 @@ Below is the structure for Bedrock Agent use cases:
 Agent Use Case Configuration:
 - `useCase` - The identifier "agent" for Bedrock Agent use cases
 - `channels` - Array of channel configurations:
-  - `channel` - The messaging channel ("sms", "whatsapp", or "email") 
+  - `channel` - The messaging channel ("sms", "rcs", "whatsapp", or "email") 
   - `configurationSet` - (SMS only) The End User Messaging configuration set
   - `enabled` - Whether this channel is enabled for the use case
   - `phoneNumberId` - The End User Messaging phone number ID
@@ -215,7 +225,7 @@ Below is the structure for AgentCore Runtime use cases:
 AgentCore Runtime Use Case Configuration:
 - `useCase` - The identifier "agentcore" for AgentCore Runtime use cases
 - `channels` - Array of channel configurations:
-  - `channel` - The messaging channel ("sms", "whatsapp", or "email")
+  - `channel` - The messaging channel ("sms", "rcs", "whatsapp", or "email")
   - `enabled` - Whether this channel is enabled for the use case
   - `phoneNumberId` - The End User Messaging phone number ID
   - `processorLambdaName` - The Lambda function that processes messages for this channel
@@ -237,12 +247,12 @@ The API accepts a **POST** request with a JSON body containing an `inboundMessag
 - `inboundMessage` - Object containing message details:
   - `action` - The action to take 
     - `forward` - Just send the message to the user using the specified channel.
-    - `process` - Used by internal SMS and WhatsApp triggers and will send the message to the KB or Agent for processing.
+    - `process` - Used by the internal SMS, RCS and WhatsApp triggers and will send the message to the KB or Agent for processing.
     - `template` - Sends a WhatsApp Template message to the user.  See [below](#working-with-whatsapp-template-messages) for more information.
-  - `channel` - The messaging channel ("sms", "whatsapp", "email", or "API")
+  - `channel` - The messaging channel ("sms", "rcs", "whatsapp", "email", or "API")
     - Use "API" to return the response message in the API response without sending via another channel
   - `destinationAddress` - The destination address of the recipient ([E.164 format](https://en.wikipedia.org/wiki/E.164))
-    - For SMS and WhatsApp this is the phone number in [E.164 format](https://en.wikipedia.org/wiki/E.164)
+    - For SMS, RCS and WhatsApp this is the phone number in [E.164 format](https://en.wikipedia.org/wiki/E.164)
     - For Email this is the email address
     - For API channel, this can be a session identifier or user ID
   - `messageBody` - The text content of the message
@@ -300,6 +310,21 @@ curl "[API REST Endpoint]/sendMessages" \
 - [API REST Endpoint]: This is output by the CDK deployment or you can open up the CloudFormation deployment and find the `APIEndpointURL` in the Outputs Tab.
 - [Access Key ID] & [Secret Access Key]: Created when you enable an Access Key for the user created by the solution. The username is output by the CDK deployment or you can open up the CloudFormation deployment and find `APIIAMUserName` in the Outputs Tab.
 - [Destination Address]: The destination phone number in [E.164 format](https://en.wikipedia.org/wiki/E.164)
+
+#### RCS
+```bash
+curl "[API REST Endpoint]/sendMessages" \
+--request POST \
+--aws-sigv4 "aws:amz:us-east-1:execute-api" \
+--user "[Access Key ID]":"[Secret Access Key]" \
+--data '{"inboundMessage":{"action":"forward", "channel":"rcs","destinationAddress": "[Destination Address (E.164 format)]","messageBody":"This is a test message?", "useCaseId": "agent"}}' \
+--header 'Content-Type: application/json'
+```
+
+- [API REST Endpoint]: This is output by the CDK deployment or you can open up the CloudFormation deployment and find the `APIEndpointURL` in the Outputs Tab.
+- [Access Key ID] & [Secret Access Key]: Created when you enable an Access Key for the user created by the solution. The username is output by the CDK deployment or you can open up the CloudFormation deployment and find `APIIAMUserName` in the Outputs Tab.
+- [Destination Address]: The destination phone number in [E.164 format](https://en.wikipedia.org/wiki/E.164)
+- Note: The recipient must be an RCS-capable device. When using a testing agent, it must also be a registered test device on the AWS RCS Agent.
 
 #### Response via API
 

@@ -163,6 +163,15 @@ export class CdkBackendStack extends Stack {
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
           actions: [
+            "sms-voice:UpdateRcsAgent",
+          ],
+          resources: [
+              `arn:aws:sms-voice:${this.region}:${this.account}:rcs-agent/*`
+          ]
+        }),
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
             "iam:PassRole",
           ],
           resources: [
@@ -413,6 +422,134 @@ export class CdkBackendStack extends Stack {
         processorLambdaName: smsProcessorLambda.functionName,
         phoneNumberId: ssmParams.smsOriginationNumberId,
         configurationSet: ssmParams.smsConfigurationSet == 'not-defined' ? undefined : ssmParams.smsConfigurationSet,
+        enabled: true,
+      })
+    }
+
+    //RCS Configuration
+    if (ssmParams.rcsEnabled) {
+      //Guard: RCS and SMS must not share the same two-way SNS topic. If they did,
+      //both the SMS and RCS trigger Lambdas would subscribe to the same topic and
+      //every inbound message would invoke both triggers — causing the orchestrator
+      //to run twice (duplicate agent invocations, duplicate conversation rows, and
+      //duplicate replies to the user). The inbound payload carries nothing that
+      //identifies the source channel, so an SNS filter policy cannot separate them.
+      if (ssmParams.smsEnabled &&
+          ssmParams.rcsSNSTopicArn !== 'not-defined' &&
+          ssmParams.rcsSNSTopicArn === ssmParams.smsSNSTopicArn) {
+        throw new Error('rcs-sns-topic-arn must differ from sms-sns-topic-arn: sharing one two-way SNS topic makes both the SMS and RCS triggers process every inbound message.');
+      }
+
+      //The RCS Agent ARN is used as the origination identity for outbound
+      //messages and as the resource for two-way messaging configuration.
+      const rcsAgentArn = `arn:aws:sms-voice:${this.region}:${this.account}:rcs-agent/${ssmParams.rcsAgentId}`;
+
+      let rcsTopic: sns.ITopic;
+      //SNS Topic for 2-way RCS
+      if (ssmParams.rcsSNSTopicArn == 'not-defined') {
+        rcsTopic = new sns.Topic(this,'rcsNotification', {
+          displayName: `${configParams.CdkAppName}-RCSNotificationTopic`,
+          masterKey: aws_sns_kms
+        })
+      } else {
+        rcsTopic = sns.Topic.fromTopicArn(this, 'rcsTopic', ssmParams.rcsSNSTopicArn)
+      }
+
+      const rcsSnsRole = new iam.Role(this, 'rcsSnsRole', {
+        assumedBy: new iam.ServicePrincipal('sms-voice.amazonaws.com')
+      });
+
+      rcsSnsRole.addToPolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            "sns:Publish",
+          ],
+          resources: [
+            rcsTopic.topicArn
+          ]
+        })
+      )
+
+      //RCS Trigger Lambda
+      const rcsTriggerLambda = new nodeLambda.NodejsFunction(this, 'rcsTriggerLambda', {
+        runtime: Runtime.NODEJS_22_X,
+        entry: path.join(__dirname, 'lambdas/handlers/node/triggers/rcsTrigger.mjs'),
+        timeout: Duration.seconds(30),
+        memorySize: 512,
+        logFormat: 'JSON',
+        applicationLogLevel: 'INFO',
+        environment: {
+          "APPLICATION_VERSION": `v${this.node.tryGetContext('application_version')} (${new Date().toISOString()})`,
+          "CHAT_ORCHESTRATOR_LAMBDA_NAME": chatOrchestratorLambda.functionName
+        },
+        initialPolicy: [
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['lambda:InvokeFunction'],
+            resources: [
+              `arn:aws:lambda:${this.region}:${this.account}:function:${chatOrchestratorLambda.functionName}`,
+            ]
+          })
+        ]
+      });
+
+      // subscribe a Lambda to the RCS SNS topic
+      rcsTopic.addSubscription(new subscriptions.LambdaSubscription(rcsTriggerLambda));
+
+      //RCS Processor Lambda
+      const rcsProcessorLambda = new nodeLambda.NodejsFunction(this, 'rcsProcessorLambda', {
+        runtime: Runtime.NODEJS_22_X,
+        entry: path.join(__dirname, 'lambdas/handlers/node/outbound-processors/rcsProcessor.mjs'),
+        timeout: Duration.seconds(30),
+        memorySize: 512,
+        logFormat: 'JSON',
+        applicationLogLevel: 'INFO',
+        environment: {
+          "APPLICATION_VERSION": `v${this.node.tryGetContext('application_version')} (${new Date().toISOString()})`,
+          "RCS_AGENT_ARN": rcsAgentArn,
+        },
+        initialPolicy: [
+          new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: [
+                "sms-voice:SendTextMessage"
+              ],
+              resources: [
+                rcsAgentArn
+              ]
+          }),
+        ]
+      })
+
+      chatOrchestratorLambda.addToRolePolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            "lambda:InvokeFunction"
+          ],
+          resources: [
+            `arn:aws:lambda:${this.region}:${this.account}:function:${rcsProcessorLambda.functionName}`,
+          ]
+        }),
+      );
+
+      const rcsConfigCustomResource = new CustomResource(this, `${configParams.CdkAppName}-RCSConfigCustomResource`, {
+        resourceType: 'Custom::RCSConfig',
+        serviceToken: configLambda.functionArn,
+        serviceTimeout: Duration.seconds(30),
+        properties: {
+            RcsAgentId: ssmParams.rcsAgentId,
+            ChatSNSTopicARN: rcsTopic.topicArn,
+            SNSRoleARN: rcsSnsRole.roleArn,
+            Random: Date.now().toString()
+        }
+      });
+
+      targetChannels.push({
+        channel: 'rcs',
+        processorLambdaName: rcsProcessorLambda.functionName,
+        rcsAgentId: ssmParams.rcsAgentId,
         enabled: true,
       })
     }

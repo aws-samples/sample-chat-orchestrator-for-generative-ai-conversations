@@ -1,5 +1,5 @@
 import { configure, sendSuccess, sendFailure, sendResponse, LOG_VERBOSE, SUCCESS } from 'cfn-custom-resource';
-import { PinpointSMSVoiceV2Client, UpdatePhoneNumberCommand } from "@aws-sdk/client-pinpoint-sms-voice-v2"; // ES Modules import
+import { PinpointSMSVoiceV2Client, UpdatePhoneNumberCommand, UpdateRcsAgentCommand } from "@aws-sdk/client-pinpoint-sms-voice-v2"; // ES Modules import
 import {SocialMessagingClient, PutWhatsAppBusinessAccountEventDestinationsCommand, ListLinkedWhatsAppBusinessAccountsCommand} from "@aws-sdk/client-socialmessaging";
 
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
@@ -88,6 +88,26 @@ const updatePhoneNumber = async (props) => {
   }
 }
 
+const updateRcsAgent = async (props) => {
+  try {
+    const input = {
+      RcsAgentId: props.RcsAgentId,
+      TwoWayEnabled: true,
+      TwoWayChannelArn: props.ChatSNSTopicARN,
+      TwoWayChannelRole: props.SNSRoleARN,
+    };
+    console.trace(input)
+    const command = new UpdateRcsAgentCommand(input);
+    const response = await pinpointClient.send(command);
+    console.trace(response);
+    return response
+  }
+  catch (error) {
+      console.error(error);
+      return false
+  }
+}
+
 const putDynamoDBItem = async (tableName, item) => {
   const params = {
     TableName : tableName,
@@ -125,6 +145,22 @@ export const handler = async (event, context, callback) => {
           if (requestType === 'Create' || requestType === 'Update'){
             //Create or Update Stuff
             await updatePhoneNumber(props);
+
+            const result = await sendSuccess(physicalId, { }, event);
+            return result
+          } else if(requestType === 'Delete'){
+            //Delete Stuff
+            const result = await sendSuccess(physicalId, { }, event);
+            return result
+          } else {
+            const result = await sendSuccess(physicalId, { }, event);
+            return result
+          }
+
+        case 'Custom::RCSConfig':
+          if (requestType === 'Create' || requestType === 'Update'){
+            //Configure two-way messaging on the RCS Agent
+            await updateRcsAgent(props);
 
             const result = await sendSuccess(physicalId, { }, event);
             return result

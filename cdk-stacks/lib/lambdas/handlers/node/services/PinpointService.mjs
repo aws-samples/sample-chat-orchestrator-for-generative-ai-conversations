@@ -30,6 +30,32 @@ export async function sendSMS (destinationAddress, message, sessionId=undefined)
   }
 }
 
+export async function sendRCS (destinationAddress, message, sessionId=undefined) {
+  // Phase 1: plain text RCS via SendTextMessage using the RCS Agent ARN as the
+  // origination identity (direct send, RCS-only, no SMS fallback).
+  const pinpointInput = {
+    DestinationPhoneNumber: destinationAddress,
+    OriginationIdentity: process.env.RCS_AGENT_ARN,
+    MessageBody: message,
+    DryRun: false,
+  };
+  if(sessionId) {
+    pinpointInput.Context = {
+      sessionId: sessionId
+    }
+  }
+  console.trace(pinpointInput)
+
+  try {
+    const pinpointCommand = new SendTextMessageCommand(pinpointInput);
+    const pinpointResponse = await pinpoint.send(pinpointCommand);
+    return pinpointResponse
+  } catch (error) {
+      console.error('Pinpoint.SendTextMessageCommand (RCS): ', error);
+      throw new Error(error.message);
+  }
+}
+
 export async function sendMMS (destinationAddress, s3URI, message) {
   const pinpointInput = { 
     DestinationPhoneNumber: destinationAddress, 

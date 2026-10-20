@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-08-06
+### Added
+- RCS (Rich Communication Services) as a new messaging channel via AWS End User Messaging SMS
+- Inbound RCS messages received through an SNS topic and processed by a dedicated RCS trigger Lambda
+- Outbound RCS text replies sent with `SendTextMessage` using the AWS RCS Agent as the origination identity
+- `rcsEnabled`, `rcsAgentId`, and `rcsSNSTopicArn` configuration parameters
+- Custom resource that enables two-way messaging on the AWS RCS Agent during deployment
+- Documentation and a link to the sample RCS agent setup for creating an RCS Agent in minutes
+- Unit tests (fast-check) for the SMS and RCS outbound processors and the RCS send path
+- Synth-time guard that prevents sharing one two-way SNS topic between the SMS and RCS channels
+- Updated architecture diagram (`architecture.png`) reflecting the RCS channel, AgentCore Runtime response generator, and grouped Channel Triggers / Outbound Processors, with an editable draw.io source (`architecture.drawio`, also embedded in the PNG)
+
+### Fixed
+- Chore: corrected the AgentCore response generator property-based tests to account for the handler's final `.trim()`/`<thinking>`-strip normalization (the suite failed on empty/whitespace-only text blocks)
+
 ## [3.0.0] - 2026-08-04
 ### Added
 - AgentCore Runtime as a third response generator option. CDK automatically uploads agent source code to S3 and creates the runtime — no Docker or ECR required.
