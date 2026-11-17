@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.1] - 2026-08-06
+### Changed
+- Dependency maintenance (no functional changes):
+  - Bumped `aws-cdk-lib` from 2.247.0 to 2.263.0 in `cdk-stacks`
+  - Bumped `esbuild` from 0.25.0 to 0.28.1 in `cdk-stacks/lib/lambdas/handlers/node`
+  - Bumped `js-yaml` from 3.14.2 to 3.15.2 in `cdk-stacks`
+  - Bumped `brace-expansion` from 1.1.18 to 1.1.21 in `cdk-stacks`
+  - Bumped `handlebars` from 4.7.9 to 4.7.10 in `cdk-stacks`
+  - Picked up `browserslist` 4.28.x transitively via the CDK update
+
 ## [3.1.0] - 2026-08-06
 ### Added
 - RCS (Rich Communication Services) as a new messaging channel via AWS End User Messaging SMS
