@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto';
 const DynamoDBService = require('./services/DynamoDBService.mjs');
 const FirehoseService = require('./services/FirehoseService.mjs');
 const LambdaService = require('./services/LambdaService.mjs');
+const PinpointService = require('./services/PinpointService.mjs');
 const xss = require("xss") //https://github.com/leizongmin/js-xss
 const Cache = require('./services/CacheService.js');
 // Initialize cache
@@ -90,6 +91,8 @@ const getConversation = async (phoneNumber, channel) => {
             TableName : process.env.CONTEXT_DYNAMODB_TABLE,
             IndexName: "PhoneIndex",
             KeyConditionExpression: "phoneNumber = :phoneNumber",
+            // Expired items are returned on purpose: processMessage still needs
+            // the last use case after the session window ends, and it filters on ttl itself.
             FilterExpression: "channel = :channel",
             ExpressionAttributeValues: {
                 ":phoneNumber": phoneNumber,
@@ -107,6 +110,79 @@ const getConversation = async (phoneNumber, channel) => {
         return false
     }
 
+}
+
+// End User Messaging answers keywords (STOP, HELP, or any keyword configured
+// with PutKeyword) itself, then still publishes the message to SNS. Skip those
+// messages so the customer doesn't also get an agent reply.
+//
+// The SMS payload names the matched keyword in messageKeyword, but the RCS
+// payload has no messageKeyword field, so the body is also compared with the
+// keywords configured on the receiving phone number or RCS agent. Only a
+// message that is exactly a keyword (ignoring case and surrounding spaces)
+// counts: on RCS, "Help me with my order" gets no keyword response, so it
+// must reach the agent.
+
+// Opt-out keywords the service handles on every number (keywords-required in the
+// End User Messaging SMS User Guide), matched only as the whole message.
+const REQUIRED_OPT_OUT_KEYWORDS = ['ARRET', 'CANCEL', 'END', 'OPT-OUT', 'OPTOUT', 'QUIT', 'REMOVE', 'STOP', 'TD', 'UNSUBSCRIBE']
+
+// DescribeKeywords needs the phone number ID or RCS agent ID, which the
+// inbound SMS payload doesn't carry, so the stack passes them in.
+const keywordIdentityForChannel = (channel) => {
+    if (channel === 'sms') return process.env.SMS_ORIGINATION_NUMBER_ID
+    if (channel === 'rcs') return process.env.RCS_AGENT_ID
+    return undefined
+}
+
+const getConfiguredKeywords = async (originationIdentity) => {
+    const cacheKey = `keywords:${originationIdentity}`
+    let keywords = cache.get(cacheKey)
+    if (!keywords) {
+        keywords = await PinpointService.describeKeywords(originationIdentity)
+        cache.set(cacheKey, keywords, 300) // Cache for 5 minutes, like the use cases
+    }
+    return keywords
+}
+
+
+const isKeywordMessage = async (inboundMessage, channel) => {
+    const body = typeof inboundMessage.messageBody === 'string' ? inboundMessage.messageBody.trim().toUpperCase() : ''
+    if (!body) return false
+
+    const payloadKeyword = typeof inboundMessage.messageKeyword === 'string' ? inboundMessage.messageKeyword.trim().toUpperCase() : ''
+    if (payloadKeyword && body.startsWith(payloadKeyword)) return true
+
+    const originationIdentity = keywordIdentityForChannel(channel)
+    if (!originationIdentity) return false
+
+    if (REQUIRED_OPT_OUT_KEYWORDS.includes(body)) return true
+
+    try {
+        const keywords = await getConfiguredKeywords(originationIdentity)
+        return keywords.includes(body)
+    } catch (error) {
+        // Fail open: the opt-out keywords above are still skipped
+        console.error('Keyword lookup failed, processing message anyway: ', error)
+        return false
+    }
+}
+
+// SNS delivers at least once, so the same inbound message can arrive twice.
+// The inbound message is stored with its inboundMessageId as the sort key,
+// so an existing item means this message was already processed.
+const isDuplicateInbound = async (inboundMessage) => {
+    try {
+        const existing = await DynamoDBService.get(process.env.CONTEXT_DYNAMODB_TABLE, {
+            phoneNumber: inboundMessage.destinationAddress,
+            messageId: inboundMessage.inboundMessageId
+        })
+        return !!existing?.Item
+    } catch (error) {
+        // Fail open: answering a rare duplicate is better than dropping a message
+        console.error('Duplicate check failed, processing message anyway: ', error)
+        return false
+    }
 }
 
 //Forward the message as is to the recipient
@@ -160,17 +236,26 @@ const processMessage = async (useCases, recipient, message) => {
     } else {
 
         //Get Conversation
-        let conversation = await getConversation(recipient.destinationAddress, recipient.channel)
+        const storedMessages = await getConversation(recipient.destinationAddress, recipient.channel) || []
+        // DynamoDB deletes expired items in the background, sometimes days later,
+        // so check ttl here to keep SESSION_SECONDS authoritative for the session.
+        const now = Date.now() / 1000
+        const conversation = storedMessages.filter(item => Number(item.ttl) > now)
+        const lastStored = storedMessages[storedMessages.length - 1]
+        const lastActive = conversation[conversation.length - 1]
 
         let sessionVariables = {}
 
-        // Use passed-in useCaseId if provided, otherwise fall back to conversation history
-        sessionVariables.useCaseId = recipient.useCaseId || conversation[conversation.length - 1]?.sessionVariables?.useCaseId
-        // set random sessionId if no previous conversation
-        sessionVariables.sessionId =  randomUUID() || conversation[conversation.length - 1]?.sessionVariables?.sessionId
+        // Use passed-in useCaseId if provided, otherwise fall back to the last stored message,
+        // even an expired one, so a customer who comes back after the session window still
+        // reaches their use case instead of failing with no use case
+        sessionVariables.useCaseId = recipient.useCaseId || lastStored?.sessionVariables?.useCaseId
+        // Reuse the session id only within the session window: AgentCore and Bedrock Agents keep
+        // conversation context per session id. After it expires, start a new session.
+        sessionVariables.sessionId = lastActive?.sessionVariables?.sessionId ?? randomUUID()
 
-        if (conversation[conversation.length - 1]?.sessionVariables?.llmSessionId) sessionVariables.llmSessionId = conversation[conversation.length - 1].sessionVariables.llmSessionId
-        if (conversation[conversation.length - 1]?.sessionVariables?.channel) sessionVariables.channel = conversation[conversation.length - 1].sessionVariables.channel
+        if (lastActive?.sessionVariables?.llmSessionId) sessionVariables.llmSessionId = lastActive.sessionVariables.llmSessionId
+        if (lastStored?.sessionVariables?.channel) sessionVariables.channel = lastStored.sessionVariables.channel
         
         let useCase = useCases.Items.find(useCase => useCase.useCase.toLowerCase().trim() === sessionVariables.useCaseId)
         console.trace('Determined Use Case: ', JSON.stringify(useCase, null, 2))
@@ -250,6 +335,19 @@ exports.handler = async (event, _context, callback) => {
             //Call the Channel Finder Lambda to determine the channel
             let channelResponse = await LambdaService.invoke(process.env.CHANNEL_FINDER_LAMBDA_NAME, {recipient: inboundMessage})
             channel = channelResponse.channel
+        }
+
+        if (inboundMessage.action === 'process') {
+            if (await isKeywordMessage(inboundMessage, channel)) {
+                console.info(`Skipping keyword message on ${channel} (${inboundMessage.inboundMessageId}); End User Messaging sends the keyword response.`)
+                callback(null, {'responseMessage': null, 'skipped': 'keyword'})
+                return
+            }
+            if (inboundMessage.inboundMessageId && inboundMessage.destinationAddress && await isDuplicateInbound(inboundMessage)) {
+                console.info(`Skipping duplicate inbound message ${inboundMessage.inboundMessageId}`)
+                callback(null, {'responseMessage': null, 'skipped': 'duplicate'})
+                return
+            }
         }
 
         if(!inboundMessage.inboundMessageId) inboundMessage.inboundMessageId = randomUUID();

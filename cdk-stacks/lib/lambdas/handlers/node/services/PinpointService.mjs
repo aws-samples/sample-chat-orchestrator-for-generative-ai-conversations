@@ -1,7 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 
-import { PinpointSMSVoiceV2Client, SendTextMessageCommand, SendMediaMessageCommand } from "@aws-sdk/client-pinpoint-sms-voice-v2"; 
+import { PinpointSMSVoiceV2Client, SendTextMessageCommand, SendMediaMessageCommand, DescribeKeywordsCommand } from "@aws-sdk/client-pinpoint-sms-voice-v2"; 
 const pinpoint = new PinpointSMSVoiceV2Client({ region: process.env.AWS_REGION });
 
 export async function sendSMS (destinationAddress, message, sessionId=undefined) {
@@ -79,4 +79,25 @@ export async function sendMMS (destinationAddress, s3URI, message) {
       throw new Error(error.message);
   }
 }
-
+// Returns the keywords configured on a phone number ID, pool ID or RCS agent ID,
+// in upper case. DescribeKeywords does not accept an E.164 phone number.
+export async function describeKeywords (originationIdentity) {
+  const keywords = []
+  let nextToken = undefined
+  try {
+    do {
+      const response = await pinpoint.send(new DescribeKeywordsCommand({
+        OriginationIdentity: originationIdentity,
+        NextToken: nextToken
+      }));
+      for (const item of response.Keywords || []) {
+        if (item.Keyword) keywords.push(item.Keyword.trim().toUpperCase())
+      }
+      nextToken = response.NextToken
+    } while (nextToken)
+    return keywords
+  } catch (error) {
+      console.error('Pinpoint.DescribeKeywordsCommand: ', error);
+      throw new Error(error.message);
+  }
+}
