@@ -4,7 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.1.1] - 2026-08-06
+## [3.1.2] - 2026-11-18
+### Added
+- Property-based tests (fast-check) for the session id the chat orchestrator passes to the response generator
+- Unit tests for the chat orchestrator's keyword, duplicate and expired-conversation handling
+
+### Fixed
+- Replies now reuse the session id stored with the conversation instead of creating a new one for every message. Since 2.1.0, every reply on every channel started a new session, so the AgentCore Runtime and Bedrock Agents response generators had no context from earlier messages.
+- A reply after the session window (`SESSION_SECONDS`, 600 seconds) now starts a new agent session without the expired history, but keeps the conversation's use case. DynamoDB deletes expired items in the background, sometimes days later, so expired messages could otherwise be reused and resume an old session.
+- Inbound messages that are only a keyword configured on the phone number or RCS agent (such as STOP or HELP) are no longer sent to the response generator. End User Messaging already sends the keyword's response, so the customer got two replies. The RCS inbound payload has no `messageKeyword` field, so the orchestrator reads the configured keywords with `DescribeKeywords` (cached for 5 minutes) and also skips the required opt-out keywords (STOP, CANCEL, ...) sent on their own. The orchestrator role gets `sms-voice:DescribeKeywords` on the stack's SMS number and RCS agent.
+- An inbound message whose `inboundMessageId` is already stored is skipped, so a message delivered twice by SNS no longer gets two agent runs and two replies.
+- The SMS configuration set (`sms-configuration-set`) is now applied to outbound SMS and MMS. The stack set `DEFAULT_CONFIGURATION_SET` on the SMS processor, but the code reads `CONFIGURATION_SET`, so the setting was ignored. The SMS processor role is also granted `SendTextMessage`/`SendMediaMessage` on the configuration set, which the API authorizes when one is named in the request.
+## [3.1.1] - 2026-11-17
 ### Changed
 - Dependency maintenance (no functional changes):
   - Bumped `aws-cdk-lib` from 2.247.0 to 2.263.0 in `cdk-stacks`

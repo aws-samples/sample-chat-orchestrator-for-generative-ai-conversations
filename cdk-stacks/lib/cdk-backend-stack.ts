@@ -313,6 +313,14 @@ export class CdkBackendStack extends Stack {
     
     //SMS Configuration
     if (ssmParams.smsEnabled) {
+      //The orchestrator reads the keywords configured on the number so it can skip
+      //messages End User Messaging already answers (DescribeKeywords needs the ID, not the E.164 number)
+      chatOrchestratorLambda.addEnvironment('SMS_ORIGINATION_NUMBER_ID', ssmParams.smsOriginationNumberId)
+      chatOrchestratorLambda.addToRolePolicy(new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['sms-voice:DescribeKeywords'],
+        resources: [`arn:aws:sms-voice:${this.region}:${this.account}:phone-number/${ssmParams.smsOriginationNumberId}`]
+      }))
       let chatTopic: sns.ITopic;
       //SNS Topic for 2-way SMS
       if (ssmParams.smsSNSTopicArn == 'not-defined') {
@@ -377,7 +385,8 @@ export class CdkBackendStack extends Stack {
         environment: {
           "APPLICATION_VERSION": `v${this.node.tryGetContext('application_version')} (${new Date().toISOString()})`,
           "ORIGINATION_NUMBER_ID": ssmParams.smsOriginationNumberId,
-          "DEFAULT_CONFIGURATION_SET": ssmParams.smsConfigurationSet == 'not-defined' ? undefined : ssmParams.smsConfigurationSet,
+          //PinpointService.sendSMS/sendMMS read CONFIGURATION_SET
+          "CONFIGURATION_SET": ssmParams.smsConfigurationSet == 'not-defined' ? undefined : ssmParams.smsConfigurationSet,
         },
         initialPolicy: [
           new iam.PolicyStatement({
@@ -387,7 +396,14 @@ export class CdkBackendStack extends Stack {
                 "sms-voice:SendMediaMessage"
               ],
               resources: [
-                `arn:aws:sms-voice:${this.region}:${this.account}:phone-number/${ssmParams.smsOriginationNumberId}`
+                `arn:aws:sms-voice:${this.region}:${this.account}:phone-number/${ssmParams.smsOriginationNumberId}`,
+                //SendTextMessage and SendMediaMessage also authorize the configuration set named in the request.
+                //The parameter accepts a configuration set name or ARN, like the API.
+                ...(ssmParams.smsConfigurationSet == 'not-defined' ? [] : [
+                  ssmParams.smsConfigurationSet.startsWith('arn:')
+                    ? ssmParams.smsConfigurationSet
+                    : `arn:aws:sms-voice:${this.region}:${this.account}:configuration-set/${ssmParams.smsConfigurationSet}`
+                ])
               ]
           }),
         ]
@@ -443,6 +459,14 @@ export class CdkBackendStack extends Stack {
       //The RCS Agent ARN is used as the origination identity for outbound
       //messages and as the resource for two-way messaging configuration.
       const rcsAgentArn = `arn:aws:sms-voice:${this.region}:${this.account}:rcs-agent/${ssmParams.rcsAgentId}`;
+      //The RCS inbound payload has no messageKeyword field, so the orchestrator reads
+      //the keywords configured on the agent to skip messages End User Messaging already answers
+      chatOrchestratorLambda.addEnvironment('RCS_AGENT_ID', ssmParams.rcsAgentId)
+      chatOrchestratorLambda.addToRolePolicy(new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['sms-voice:DescribeKeywords'],
+        resources: [rcsAgentArn]
+      }))
 
       let rcsTopic: sns.ITopic;
       //SNS Topic for 2-way RCS
